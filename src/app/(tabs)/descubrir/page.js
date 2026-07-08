@@ -172,7 +172,7 @@ export default function DescubrirPage() {
                 Encuentra lugares ideales para enfocarte o relajarte con recomendaciones inteligentes.
               </p>
               <div className="bg-[#6d28d9] text-white text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full shadow-[0_0_10px_rgba(109,40,217,0.6)]">
-                Desbloquea a Nivel 4
+                Desbloquea a Nivel 2
               </div>
             </div>
           </div>
