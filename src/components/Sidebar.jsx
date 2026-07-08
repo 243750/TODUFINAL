@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { X, ClipboardList, Bot, Compass, Settings, LogOut, User } from 'lucide-react';
+import { ClipboardList, Bot, Compass, Settings, LogOut, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
 
@@ -113,12 +113,6 @@ export default function Sidebar() {
             isOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
-          <button
-            onClick={close}
-            className="absolute top-5 right-3 translate-x-full text-slate-300 bg-[#1f1638] p-2 rounded-full border border-white/10"
-          >
-            <X className="w-5 h-5" />
-          </button>
           <SidebarContent onNavigate={close} />
         </div>
       </div>

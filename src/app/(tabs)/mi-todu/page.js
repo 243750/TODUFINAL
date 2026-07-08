@@ -1,8 +1,7 @@
 'use client';
-import Link from 'next/link';
 import ToduAvatar from '../../../components/ToduAvatar';
 import { useSidebar } from '../../../context/SidebarContext';
-import { Menu, Settings } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 // 1. Componente del MiniTodú (Asistente) integrado en la misma vista
 function MiniToduHelper() {
@@ -44,21 +43,16 @@ export default function MiToduPage() {
       
 {/* Header Consistente */}
       <header className="flex justify-between items-center p-6">
-        {/* Ícono de Menú Hamburguesa */}
-        <button onClick={openSidebar} className="text-slate-400 hover:text-white transition-colors">
+        {/* Ícono de Menú Hamburguesa (solo móvil; en escritorio la navegación vive en el Sidebar fijo) */}
+        <button onClick={openSidebar} className="text-slate-400 hover:text-white transition-colors lg:hidden">
           <Menu className="w-8 h-8" />
         </button>
-        
+
         {/* Título Centrado */}
         <h1 className="text-xl font-bold text-white tracking-wide">Mi Todú</h1>
-        
-        {/* Ícono de Perfil / Ajustes */}
-        <Link
-          href="/ajustes"
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
-        >
-          <Settings className="w-5 h-5 text-violet-300" />
-        </Link>
+
+        {/* Espaciador para mantener el título centrado ahora que no hay ícono a la derecha */}
+        <div className="w-8 h-8 lg:hidden" aria-hidden="true"></div>
       </header>
 
       <main className="max-w-md mx-auto px-6 flex flex-col gap-6">
@@ -73,29 +67,40 @@ export default function MiToduPage() {
         </section>
 
         {/* Tarjeta de Estadísticas (Nivel y Racha) */}
-        <section className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-5 shadow-lg">
-          <div className="flex justify-between items-end mb-4">
-            <div>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Nivel Actual</p>
-              <h2 className="text-3xl font-black text-white">Lvl. 5</h2>
+        <div className="stat-card-outer">
+          <div className="stat-card-dot"></div>
+          <section className="stat-card p-5 shadow-lg">
+            <div className="stat-card-ray"></div>
+            <div className="stat-card-line topl"></div>
+            <div className="stat-card-line leftl"></div>
+            <div className="stat-card-line bottoml"></div>
+            <div className="stat-card-line rightl"></div>
+
+            <div className="relative z-10">
+              <div className="flex justify-between items-end mb-4">
+                <div>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Nivel Actual</p>
+                  <h2 className="text-3xl font-black text-white">Lvl. 5</h2>
+                </div>
+                <div className="text-right">
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Racha</p>
+                  <h2 className="text-xl font-bold text-orange-400">🔥 5 Días</h2>
+                </div>
+              </div>
+
+              {/* Barra de XP estilo TikTok (Gradiente intenso) */}
+              <div className="relative pt-2">
+                <div className="flex justify-between text-xs font-bold mb-1.5">
+                  <span className="text-[#a78bfa]">150 XP</span>
+                  <span className="text-slate-500">Siguiente: 300 XP</span>
+                </div>
+                <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 shadow-inner">
+                  <div className="h-full bg-gradient-to-r from-[#a78bfa] via-[#6d28d9] to-[#cab3ff] rounded-full shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: '50%' }}></div>
+                </div>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Racha</p>
-              <h2 className="text-xl font-bold text-orange-400">🔥 5 Días</h2>
-            </div>
-          </div>
-          
-          {/* Barra de XP estilo TikTok (Gradiente intenso) */}
-          <div className="relative pt-2">
-            <div className="flex justify-between text-xs font-bold mb-1.5">
-              <span className="text-[#a78bfa]">150 XP</span>
-              <span className="text-slate-500">Siguiente: 300 XP</span>
-            </div>
-            <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden border border-white/5 shadow-inner">
-              <div className="h-full bg-gradient-to-r from-[#a78bfa] via-[#6d28d9] to-[#cab3ff] rounded-full shadow-[0_0_10px_rgba(167,139,250,0.5)]" style={{ width: '50%' }}></div>
-            </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         {/* Tienda / Desbloqueables de Temporada */}
         <section className="mt-2">
@@ -130,4 +135,3 @@ export default function MiToduPage() {
     </div>
   );
 }
-

@@ -68,3 +68,113 @@ body {
     animation: none;
   }
 }
+
+/* Tarjeta "premium" (Uiverse.io by Spacious74), adaptada a la paleta violeta
+   de Todú (el original usaba blanco/negro) y hecha de ancho variable en vez
+   de fijo (300x250px), para poder meter contenido real dentro (Nivel/Racha/
+   barra de XP) en vez de solo un número grande. Se usa en Mi Todú. */
+.stat-card-outer {
+  position: relative;
+  border-radius: 1rem; /* hace juego con rounded-2xl del resto de tarjetas */
+  padding: 1px;
+  background: radial-gradient(circle 230px at 0% 0%, #a78bfa, #150f27);
+}
+
+.stat-card-dot {
+  width: 5px;
+  aspect-ratio: 1;
+  position: absolute;
+  background-color: #c4b5fd;
+  box-shadow: 0 0 10px #a78bfa;
+  border-radius: 100px;
+  z-index: 3;
+  right: 6%;
+  top: 8%;
+  animation: stat-card-move-dot 6s linear infinite;
+}
+
+@keyframes stat-card-move-dot {
+  0%,
+  100% {
+    top: 8%;
+    right: 6%;
+  }
+  25% {
+    top: 8%;
+    right: calc(100% - 30px);
+  }
+  50% {
+    top: calc(100% - 26px);
+    right: calc(100% - 30px);
+  }
+  75% {
+    top: calc(100% - 26px);
+    right: 6%;
+  }
+}
+
+.stat-card {
+  position: relative;
+  z-index: 1;
+  border-radius: calc(1rem - 1px);
+  border: solid 1px #34285c;
+  background: radial-gradient(circle 280px at 0% 0%, #2b2153, #150f27);
+  overflow: hidden;
+}
+
+.stat-card-ray {
+  width: 220px;
+  height: 45px;
+  border-radius: 100px;
+  position: absolute;
+  background-color: #a78bfa;
+  opacity: 0.22;
+  box-shadow: 0 0 50px #a78bfa;
+  filter: blur(10px);
+  transform-origin: 10%;
+  top: 0%;
+  left: 0;
+  transform: rotate(40deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.stat-card-line {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+.stat-card-line.topl {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, #a78bfa 0%, transparent 70%);
+}
+.stat-card-line.bottoml {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 30%, #34285c 100%);
+}
+.stat-card-line.leftl {
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, #a78bfa 0%, transparent 70%);
+}
+.stat-card-line.rightl {
+  right: 0;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 30%, #34285c 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card-dot {
+    animation: none;
+  }
+}

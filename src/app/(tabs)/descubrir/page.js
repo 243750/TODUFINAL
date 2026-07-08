@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Menu, Check, Lock, Settings } from 'lucide-react';
+import { Check, Lock, Menu } from 'lucide-react';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
 import { api, ApiError } from '../../../lib/api';
@@ -58,7 +57,15 @@ export default function DescubrirPage() {
   const { open: openSidebar } = useSidebar();
   const { user } = useAuth();
 
-  const [progreso, setProgreso] = useState(null); // { nivel, xpActual, xpSiguienteNivel }
+  // Valor de ejemplo mientras no hay sesión/backend real: así el LVL y la
+  // barra de XP siempre se ven en preview. Si hay usuario real y el
+  // servicio de gamificación responde, el useEffect de abajo lo reemplaza.
+  const [progreso, setProgreso] = useState({
+    nivel: 5,
+    xpActual: 150,
+    xpSiguienteNivel: 300,
+    progresoPorcentaje: 50,
+  });
   const [inventario, setInventario] = useState([]); // [{ itemId, isEquipped }]
   const [busyItem, setBusyItem] = useState(null);
   const [error, setError] = useState('');
@@ -113,7 +120,7 @@ export default function DescubrirPage() {
 
       {/* 1. Header Híbrido (Menú + Stats RPG + Avatar Animado) */}
       <header className="flex items-center p-6 gap-4">
-        <button onClick={openSidebar} className="text-slate-400 hover:text-white transition-colors flex-shrink-0">
+        <button onClick={openSidebar} className="text-slate-400 hover:text-white transition-colors flex-shrink-0 lg:hidden">
           <Menu className="w-7 h-7" />
         </button>
 
@@ -136,13 +143,6 @@ export default function DescubrirPage() {
             </span>
           </div>
         </div>
-
-        <Link
-          href="/ajustes"
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors flex-shrink-0"
-        >
-          <Settings className="w-5 h-5 text-violet-300" />
-        </Link>
       </header>
 
       {/* 2. Contenido Principal */}
