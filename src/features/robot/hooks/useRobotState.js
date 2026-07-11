@@ -1,21 +1,19 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { api } from '../../lib/api';
-import { useAuth } from '../../context/AuthContext';
+import { api } from '../../../lib/api';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function useRobotState() {
   const { user } = useAuth();
   const [emocionActual, setEmocionActual] = useState('idle');
-  const [mensaje, setMensaje] = useState('¡Hola! Estoy listo para ayudarte.');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
 
-    api.get(`/robot/${user.id}/state`)
+    api.get(`/robot/estado/${user.id}`)
       .then((data) => {
-        setEmocionActual(data.emotion ?? 'idle');
-        setMensaje(data.message ?? '¡Hola! Estoy listo para ayudarte.');
+        setEmocionActual(data.emocion ?? 'idle');
       })
       .catch(() => {
         setEmocionActual('idle');
@@ -26,16 +24,14 @@ export default function useRobotState() {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const data = await api.post(`/robot/${user.id}/event`, { event: evento });
-      setEmocionActual(data.emotion ?? 'idle');
-      setMensaje(data.message ?? '');
+      const data = await api.post('/robot/evento', { userId: user.id, event: evento });
+      setEmocionActual((data.emotion ?? 'idle').toLowerCase());
 
-      if (['happy', 'surprised', 'scared'].includes(data.emotion)) {
+      if (['Happy', 'Surprised', 'Scared'].includes(data.emotion)) {
         setTimeout(async () => {
           try {
-            const estadoActual = await api.get(`/robot/${user.id}/state`);
-            setEmocionActual(estadoActual.emotion ?? 'idle');
-            setMensaje(estadoActual.message ?? '');
+            const estadoActual = await api.get(`/robot/estado/${user.id}`);
+            setEmocionActual(estadoActual.emocion ?? 'idle');
           } catch {
             setEmocionActual('idle');
           }
@@ -49,19 +45,18 @@ export default function useRobotState() {
   }, [user]);
 
   const tareaCompletada = useCallback(() => dispararEvento('TASK_COMPLETED'), [dispararEvento]);
-  const tareaRechazada  = useCallback(() => dispararEvento('TASK_REJECTED'),  [dispararEvento]);
-  const tareaUrgente    = useCallback(() => dispararEvento('TASK_URGENT'),    [dispararEvento]);
+  const tareaRechazada  = useCallback(() => dispararEvento('TASK_EXPIRED'),   [dispararEvento]);
   const subioDeNivel    = useCallback(() => dispararEvento('LEVEL_UP'),       [dispararEvento]);
   const sinActividad    = useCallback(() => dispararEvento('NO_ACTIVITY'),    [dispararEvento]);
+  const diaDeRacha      = useCallback(() => dispararEvento('STREAK_DAY'),     [dispararEvento]);
 
   return {
     emocionActual,
-    mensaje,
     loading,
     tareaCompletada,
     tareaRechazada,
-    tareaUrgente,
     subioDeNivel,
     sinActividad,
+    diaDeRacha,
   };
 }

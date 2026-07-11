@@ -1,8 +1,13 @@
 'use client';
 import Link from 'next/link';
 import ToduAvatar from '../../components/ToduAvatar';
+import { useAuth } from '../../context/AuthContext';
+import useRobotState from '../../features/robot/hooks/useRobotState';
 
 export default function ArcadeLobbyPage() {
+  const { user } = useAuth();
+  const { emocionActual } = useRobotState();
+
   return (
     <div className="min-h-screen bg-[#050505] text-slate-200 font-sans pb-10 overflow-x-hidden relative selection:bg-fuchsia-500 selection:text-white">
       
@@ -47,14 +52,14 @@ export default function ArcadeLobbyPage() {
           <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.25)_50%)] bg-[size:100%_4px] pointer-events-none opacity-50"></div>
           
           <div className="w-20 h-20 flex-shrink-0 relative z-10">
-            <ToduAvatar emotion="idle" size={80} />
+            <ToduAvatar emotion={emocionActual} size={80} />
           </div>
           
           <div className="flex-1 relative z-10">
             <span className="inline-block bg-cyan-500 text-black text-[9px] font-black uppercase tracking-widest px-2 py-0.5 mb-1 rounded-sm animate-pulse">
               Player 1 Ready
             </span>
-            <h2 className="text-base font-bold text-white tracking-wide">JORGE</h2>
+            <h2 className="text-base font-bold text-white tracking-wide">{user?.username?.toUpperCase() || 'JUGADOR'}</h2>
             <p className="text-[10px] text-cyan-200/70 uppercase tracking-wider mt-1 font-medium">
               Multiplicador XP Activo
             </p>

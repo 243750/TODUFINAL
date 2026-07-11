@@ -11,6 +11,9 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Lectura intencional de localStorage tras el primer render: evita un
+    // hydration mismatch de SSR (el servidor nunca tiene localStorage).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUser(getStoredUser());
     setLoading(false);
   }, []);
@@ -41,8 +44,18 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Actualiza el usuario en memoria (para que la UI reaccione al instante)
+  // y en localStorage (para que sobreviva a un refresh), en un solo paso.
+  const updateUser = useCallback((partialUpdate) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...partialUpdate };
+      setStoredUser(updated);
+      return updated;
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

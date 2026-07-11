@@ -1,254 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { HelpCircle, Plus, Camera, X, CheckCircle2, Clock, Menu, Pencil, Trash2 } from 'lucide-react';
+import { HelpCircle, Plus, Camera, X, CheckCircle2, Menu } from 'lucide-react';
 import ToduAvatar from '../../../components/ToduAvatar';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
-import { api } from '../../../lib/api';
 import AnimatedButton from '../../../components/ui/animated-button';
-
-const DIFICULTADES = [
-  { key: 'trivial', label: 'Trivial', xpValor: 10 },
-  { key: 'facil', label: 'Fácil', xpValor: 25 },
-  { key: 'intermedia', label: 'Intermedia', xpValor: 50 },
-  { key: 'dificil', label: 'Difícil', xpValor: 100 },
-];
-
-function TareaFormModal({ onClose, onSave, tareaInicial }) {
-  const esEdicion = !!tareaInicial;
-
-  const horarioInicial = (() => {
-    const match = tareaInicial?.descripcion?.match(/^(\d{2}:\d{2})/);
-    return match ? match[1] : '09:00';
-  })();
-  const dificultadInicial = tareaInicial
-    ? DIFICULTADES.find((d) => d.xpValor === tareaInicial.xpValor)?.key || 'facil'
-    : 'facil';
-
-  const [titulo, setTitulo] = useState(tareaInicial?.titulo || '');
-  const [horario, setHorario] = useState(horarioInicial);
-  const [dificultad, setDificultad] = useState(dificultadInicial);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!titulo.trim() || !horario) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const xpValor = DIFICULTADES.find((d) => d.key === dificultad).xpValor;
-      if (esEdicion) {
-        const data = await api.put(`/tareas/${tareaInicial.id}`, {
-          titulo: titulo.trim(),
-          descripcion: `${horario} hrs`,
-          xpValor,
-        });
-        onSave(data.tarea);
-      } else {
-        const data = await api.post('/tareas', {
-          titulo: titulo.trim(),
-          descripcion: `${horario} hrs`,
-          xpValor,
-        });
-        onSave(data.tarea);
-      }
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-[#150f27]/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
-      <div className="bg-[#1f1638] border border-violet-500/30 rounded-[2rem] p-6 w-full max-w-sm relative shadow-[0_0_40px_rgba(139,92,246,0.15)]">
-        <button onClick={onClose} className="absolute top-5 right-5 text-slate-400 hover:text-white bg-white/5 p-1.5 rounded-full transition-colors">
-          <X className="w-5 h-5" />
-        </button>
-        <h3 className="text-xl font-black text-white mb-6">{esEdicion ? 'Editar tarea' : 'Nueva tarea'}</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">{error}</p>
-          )}
-          <input
-            type="text"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            placeholder="Título de la tarea"
-            className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 outline-none focus:border-violet-500/50"
-            required
-            autoFocus
-          />
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Horario</p>
-            <input
-              type="time"
-              value={horario}
-              onChange={(e) => setHorario(e.target.value)}
-              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-violet-500/50"
-              required
-            />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Dificultad</p>
-            <div className="grid grid-cols-4 gap-2">
-              {DIFICULTADES.map((d) => (
-                <button
-                  key={d.key}
-                  type="button"
-                  onClick={() => setDificultad(d.key)}
-                  className={`py-3 rounded-xl text-[11px] font-bold border transition-colors ${
-                    dificultad === d.key
-                      ? 'bg-violet-600 border-violet-400 text-white'
-                      : 'bg-black/20 border-white/10 text-slate-400 hover:border-white/20'
-                  }`}
-                >
-                  {d.label}<br />
-                  <span className="opacity-70">{d.xpValor} XP</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-black rounded-2xl transition-colors text-sm tracking-wider uppercase shadow-[0_0_15px_rgba(139,92,246,0.3)]"
-          >
-            {loading ? (esEdicion ? 'Guardando...' : 'Creando...') : (esEdicion ? 'Guardar cambios' : 'Crear tarea')}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function EvidenciaModal({ tarea, onClose, onSuccess }) {
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [resultado, setResultado] = useState(null);
-  const [error, setError] = useState(null);
-
-  const handleFile = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-  };
-
-  const handleSubir = async () => {
-    if (!file) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('evidencia', file);
-      const data = await api.post(`/tareas/${tarea.id}/evidencia`, formData);
-      setResultado(data);
-      if (data.validacion?.approved) {
-        onSuccess(data.tarea);
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-[#150f27]/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
-      <div className="bg-[#1f1638] border border-violet-500/30 rounded-[2rem] p-6 w-full max-w-sm relative shadow-[0_0_40px_rgba(139,92,246,0.15)]">
-        <button onClick={onClose} className="absolute top-5 right-5 text-slate-400 hover:text-white bg-white/5 p-1.5 rounded-full transition-colors">
-          <X className="w-5 h-5" />
-        </button>
-        <h3 className="text-xl font-black text-white mb-1">Subir evidencia</h3>
-        <p className="text-xs text-slate-400 mb-6 truncate">{tarea.titulo}</p>
-
-        {preview ? (
-          <div className="relative mb-4">
-            <img src={preview} alt="preview" className="w-full h-48 object-cover rounded-2xl border border-white/10" />
-            <button
-              onClick={() => { setFile(null); setPreview(null); setResultado(null); }}
-              className="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-violet-500/30 rounded-2xl cursor-pointer hover:border-violet-500/60 transition-colors mb-4">
-            <Camera className="w-10 h-10 text-violet-400 mb-2" />
-            <span className="text-sm text-slate-400">Toca para seleccionar foto</span>
-            <input type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
-          </label>
-        )}
-
-        {resultado && (
-          <div className={`rounded-2xl p-4 mb-4 text-sm font-semibold ${
-            resultado.validacion?.approved
-              ? 'bg-green-500/10 border border-green-500/20 text-green-400'
-              : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
-          }`}>
-            {resultado.validacion?.approved ? '✅' : '❌'} {resultado.mensaje}
-            {resultado.validacion?.reason && (
-              <p className="text-xs font-normal mt-1 opacity-80">{resultado.validacion.reason}</p>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <p className="text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 mb-4">{error}</p>
-        )}
-
-        <button
-          onClick={handleSubir}
-          disabled={!file || loading || !!resultado?.validacion?.approved}
-          className="w-full py-3.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-black rounded-2xl transition-colors text-sm tracking-wider uppercase"
-        >
-          {loading ? 'Analizando con IA...' : 'Verificar evidencia'}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
-  const isVencida = tarea.estado === 'vencida' || tarea.estado === 'expired';
-  const isCompletada = tarea.estado === 'completed';
-
-  return (
-    <div className={`bg-[#1f1638] border border-white/5 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-lg ${isVencida ? 'border-l-4 border-l-rose-500' : ''}`}>
-      <div className="flex flex-col gap-1 min-w-0">
-        <h3 className={`text-base font-bold truncate ${isCompletada ? 'text-slate-500 line-through' : 'text-white'}`}>
-          {tarea.titulo}
-        </h3>
-        <div className={`flex items-center gap-1.5 ${isVencida ? 'text-rose-400' : 'text-slate-400'}`}>
-          {isCompletada ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-          <span className="text-[10px] font-bold uppercase tracking-wider">
-            {tarea.descripcion ? `${tarea.descripcion} · ` : ''}{tarea.xpValor} XP {isVencida ? '• Atrasada' : isCompletada ? '• Completada' : ''}
-          </span>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button onClick={() => onEdit(tarea)} aria-label="Editar tarea"
-          className="w-9 h-9 rounded-xl bg-white/5 text-slate-400 border border-white/10 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-colors">
-          <Pencil className="w-4 h-4" />
-        </button>
-        <button onClick={() => onDelete(tarea)} aria-label="Eliminar tarea"
-          className="w-9 h-9 rounded-xl bg-white/5 text-slate-400 border border-white/10 flex items-center justify-center hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-colors">
-          <Trash2 className="w-4 h-4" />
-        </button>
-        {!isCompletada && (
-          <button onClick={() => onEvidencia(tarea)}
-            className="w-12 h-12 rounded-[1.2rem] bg-violet-500/10 text-violet-400 border border-violet-500/20 flex items-center justify-center hover:bg-violet-500 hover:text-white transition-colors">
-            <Camera className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
+import useTareas from '../../../features/tareas/hooks/useTareas';
+import TaskCard from '../../../features/tareas/components/TaskCard';
+import TareaFormModal from '../../../features/tareas/components/TareaFormModal';
+import EvidenciaModal from '../../../features/tareas/components/EvidenciaModal';
 
 export default function TareasPage() {
   const [showHelp, setShowHelp] = useState(false);
@@ -258,9 +18,16 @@ export default function TareasPage() {
   const { open: openSidebar } = useSidebar();
   const { user } = useAuth();
 
-  const [tareas, setTareas] = useState([]);
-  const [loadingTareas, setLoadingTareas] = useState(true);
-  const [errorTareas, setErrorTareas] = useState(null);
+  const {
+    tareas,
+    loading: loadingTareas,
+    error: errorTareas,
+    crearTarea,
+    editarTarea,
+    eliminarTarea,
+    subirEvidencia,
+  } = useTareas();
+
   const [avatarSize, setAvatarSize] = useState(170);
 
   useEffect(() => {
@@ -272,25 +39,13 @@ export default function TareasPage() {
     return () => window.removeEventListener('resize', updateAvatarSize);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .get('/tareas/mis-tareas')
-      .then((data) => { if (!cancelled) setTareas(data.tareas || []); })
-      .catch((err) => { if (!cancelled) setErrorTareas(err.message); })
-      .finally(() => { if (!cancelled) setLoadingTareas(false); });
-    return () => { cancelled = true; };
-  }, []);
-
   const handleDelete = async (tarea) => {
     const confirmado = window.confirm(`¿Eliminar "${tarea.titulo}"? Esta acción no se puede deshacer.`);
     if (!confirmado) return;
-    setTareas((prev) => prev.filter((t) => t.id !== tarea.id));
     try {
-      await api.delete(`/tareas/${tarea.id}`);
-    } catch (err) {
-      setTareas((prev) => [tarea, ...prev]);
-      setErrorTareas(err.message);
+      await eliminarTarea(tarea);
+    } catch {
+      // eliminarTarea ya revierte el estado optimista y re-lanza el error
     }
   };
 
@@ -368,7 +123,9 @@ export default function TareasPage() {
       {showCrear && (
         <TareaFormModal
           onClose={() => setShowCrear(false)}
-          onSave={(nueva) => setTareas((prev) => [nueva, ...prev])}
+          onSave={() => {}}
+          crearTarea={crearTarea}
+          editarTarea={editarTarea}
         />
       )}
 
@@ -376,9 +133,9 @@ export default function TareasPage() {
         <TareaFormModal
           tareaInicial={tareaEditando}
           onClose={() => setTareaEditando(null)}
-          onSave={(actualizada) =>
-            setTareas((prev) => prev.map((t) => (t.id === actualizada.id ? actualizada : t)))
-          }
+          onSave={() => {}}
+          crearTarea={crearTarea}
+          editarTarea={editarTarea}
         />
       )}
 
@@ -386,10 +143,8 @@ export default function TareasPage() {
         <EvidenciaModal
           tarea={tareaEvidencia}
           onClose={() => setTareaEvidencia(null)}
-          onSuccess={(tareaActualizada) => {
-            setTareas((prev) => prev.map((t) => t.id === tareaActualizada.id ? tareaActualizada : t));
-            setTareaEvidencia(null);
-          }}
+          onSuccess={() => setTareaEvidencia(null)}
+          subirEvidencia={subirEvidencia}
         />
       )}
 

@@ -1,115 +1,18 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { Check, Lock, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
-import { api, ApiError } from '../../../lib/api';
-
-// Catálogo de accesorios tal como los define el backend (POST /inventario/agregar).
-// El emoji es un fallback visual mientras no haya arte propio para cada uno.
-const CATALOGO_ACCESORIOS = [
-  { itemId: 'ninja', label: 'Ninja', emoji: '🥷' },
-  { itemId: 'robot', label: 'Robot', emoji: '🤖' },
-  { itemId: 'wizard', label: 'Mago', emoji: '🧙' },
-  { itemId: 'superhero', label: 'Superhéroe', emoji: '🦸' },
-  { itemId: 'pirate', label: 'Pirata', emoji: '🏴‍☠️' },
-  { itemId: 'princess', label: 'Princesa', emoji: '👸' },
-  { itemId: 'bunny', label: 'Bunny', emoji: '🐰' },
-  { itemId: 'halloween', label: 'Halloween', emoji: '🎃' },
-];
-
-function AccessoryCard({ item, owned, equipped, busy, onAction }) {
-  return (
-    <div
-      className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border transition-colors ${
-        equipped
-          ? 'bg-violet-500/10 border-violet-400/40'
-          : 'bg-[#1f1638] border-white/5'
-      }`}
-    >
-      {equipped && (
-        <span className="absolute top-2 right-2 bg-violet-500 text-white rounded-full p-1">
-          <Check className="w-3 h-3" />
-        </span>
-      )}
-      <div className="w-14 h-14 rounded-xl bg-black/30 flex items-center justify-center text-3xl">
-        {owned ? item.emoji : <Lock className="w-5 h-5 text-slate-600" />}
-      </div>
-      <p className="text-xs font-bold text-slate-200">{item.label}</p>
-      <button
-        disabled={busy}
-        onClick={() => onAction(item)}
-        className={`w-full text-[10px] font-black uppercase tracking-widest py-2 rounded-full transition-colors disabled:opacity-50 ${
-          equipped
-            ? 'bg-white/10 text-slate-300 hover:bg-white/20'
-            : owned
-            ? 'bg-violet-600 text-white hover:bg-violet-500'
-            : 'bg-todu-gold/90 text-black hover:bg-todu-gold'
-        }`}
-      >
-        {busy ? '...' : equipped ? 'Desequipar' : owned ? 'Equipar' : 'Desbloquear'}
-      </button>
-    </div>
-  );
-}
+import useGamificacion from '../../../features/gamificacion/hooks/useGamificacion';
+import useInventario from '../../../features/inventario/hooks/useInventario';
+import AccessoryCard from '../../../features/inventario/components/AccessoryCard';
+import { CATALOGO_ACCESORIOS } from '../../../features/inventario/constants';
 
 export default function DescubrirPage() {
   const { open: openSidebar } = useSidebar();
   const { user } = useAuth();
 
-  // Valor de ejemplo mientras no hay sesión/backend real: así el LVL y la
-  // barra de XP siempre se ven en preview. Si hay usuario real y el
-  // servicio de gamificación responde, el useEffect de abajo lo reemplaza.
-  const [progreso, setProgreso] = useState({
-    nivel: 5,
-    xpActual: 150,
-    xpSiguienteNivel: 300,
-    progresoPorcentaje: 50,
-  });
-  const [inventario, setInventario] = useState([]); // [{ itemId, isEquipped }]
-  const [busyItem, setBusyItem] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!user?.id) return;
-
-    api
-      .get(`/xp/progreso/${user.id}`, { auth: false })
-      .then(setProgreso)
-      .catch(() => {}); // si el servicio de gamificación no responde, solo no mostramos la barra
-
-    api
-      .get('/inventario')
-      .then((data) => setInventario(data.inventario || []))
-      .catch(() => {}); // idem para inventario
-  }, [user?.id]);
-
-  const handleAction = async (item) => {
-    const enInventario = inventario.find((i) => i.itemId === item.itemId);
-    setBusyItem(item.itemId);
-    setError('');
-
-    try {
-      if (!enInventario) {
-        const res = await api.post('/inventario/agregar', { itemId: item.itemId });
-        setInventario((prev) => [...prev, res.item]);
-      } else if (enInventario.isEquipped) {
-        await api.post('/inventario/desequipar', { itemId: item.itemId });
-        setInventario((prev) =>
-          prev.map((i) => (i.itemId === item.itemId ? { ...i, isEquipped: false } : i))
-        );
-      } else {
-        await api.post('/inventario/equipar', { itemId: item.itemId });
-        setInventario((prev) =>
-          prev.map((i) => ({ ...i, isEquipped: i.itemId === item.itemId }))
-        );
-      }
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'No se pudo actualizar el inventario.');
-    } finally {
-      setBusyItem(null);
-    }
-  };
+  const { progreso } = useGamificacion();
+  const { inventario, busyItem, error, toggleItem } = useInventario();
 
   const xpPct = progreso
     ? Math.max(0, Math.min(100, 100 - (progreso.progresoPorcentaje ?? 0)))
@@ -224,7 +127,8 @@ export default function DescubrirPage() {
                   owned={!!enInventario}
                   equipped={!!enInventario?.isEquipped}
                   busy={busyItem === item.itemId}
-                  onAction={handleAction}
+                  nivelUsuario={progreso?.nivel}
+                  onAction={(it) => toggleItem(it, progreso?.nivel)}
                 />
               );
             })}

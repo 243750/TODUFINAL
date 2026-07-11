@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { useLogin } from '../hooks/useLogin';
+import { useLogin } from '../../features/auth/hooks/useLogin';
 import ToduLogo from '../../components/ToduLogo';
 
 export default function LoginPage() {

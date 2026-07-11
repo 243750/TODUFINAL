@@ -4,21 +4,9 @@ import { useRouter } from 'next/navigation';
 import { Menu, User, Lock, Trash2, LogOut, HelpCircle, X, ShieldCheck } from 'lucide-react';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
-import { api, setStoredUser } from '../../../lib/api';
-
-function Card({ icon: Icon, title, children, className = '' }) {
-  return (
-    <div className={`bg-[#1f1638] border border-white/5 rounded-3xl p-5 shadow-lg ${className}`}>
-      <div className="flex items-center gap-2 mb-4">
-        <div className="w-8 h-8 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 flex-shrink-0">
-          <Icon className="w-4 h-4" />
-        </div>
-        <h2 className="text-sm font-bold text-white">{title}</h2>
-      </div>
-      {children}
-    </div>
-  );
-}
+import { ROUTES } from '../../../lib/routes';
+import usePerfil from '../../../features/perfil/hooks/usePerfil';
+import Card from '../../../features/perfil/components/Card';
 
 const inputClass =
   'w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-violet-500/50 transition-colors disabled:opacity-40';
@@ -29,76 +17,47 @@ export default function AjustesPage() {
   const router = useRouter();
   const [showHelp, setShowHelp] = useState(false);
 
+  const {
+    usernameLoading,
+    usernameMsg,
+    actualizarUsername,
+    passwordLoading,
+    passwordMsg,
+    actualizarPassword,
+    deleteLoading,
+    deleteMsg,
+    eliminarCuenta,
+  } = usePerfil();
+
   // --- Username (el email no es editable: el backend no tiene un
   // endpoint para cambiarlo, solo /perfil/username) ---
   const [username, setUsername] = useState(user?.username || '');
-  const [usernameMsg, setUsernameMsg] = useState(null);
-  const [usernameLoading, setUsernameLoading] = useState(false);
 
   const handleUsername = async (e) => {
     e.preventDefault();
-    setUsernameMsg(null);
-    setUsernameLoading(true);
-    try {
-      const data = await api.put('/perfil/username', { username });
-      const updated = { ...user, username: data.user?.username || username };
-      setStoredUser(updated);
-      setUsernameMsg({ type: 'ok', text: 'Username actualizado.' });
-    } catch (err) {
-      setUsernameMsg({ type: 'error', text: err.message });
-    } finally {
-      setUsernameLoading(false);
-    }
+    await actualizarUsername(username);
   };
 
   // --- Password ---
   const [passwordActual, setPasswordActual] = useState('');
   const [passwordNuevo, setPasswordNuevo] = useState('');
   const [passwordConfirmar, setPasswordConfirmar] = useState('');
-  const [passwordMsg, setPasswordMsg] = useState(null);
-  const [passwordLoading, setPasswordLoading] = useState(false);
 
   const handlePassword = async (e) => {
     e.preventDefault();
-    setPasswordMsg(null);
-
-    if (passwordNuevo !== passwordConfirmar) {
-      setPasswordMsg({ type: 'error', text: 'Las contraseñas nuevas no coinciden.' });
-      return;
-    }
-
-    setPasswordLoading(true);
-    try {
-      await api.put('/perfil/password', { passwordActual, passwordNuevo });
-      setPasswordMsg({ type: 'ok', text: 'Contraseña actualizada.' });
-      setPasswordActual('');
-      setPasswordNuevo('');
-      setPasswordConfirmar('');
-    } catch (err) {
-      setPasswordMsg({ type: 'error', text: err.message });
-    } finally {
-      setPasswordLoading(false);
-    }
+    await actualizarPassword({ passwordActual, passwordNuevo, passwordConfirmar });
+    setPasswordActual('');
+    setPasswordNuevo('');
+    setPasswordConfirmar('');
   };
 
   // --- Delete account ---
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
-  const [deleteMsg, setDeleteMsg] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleDelete = async (e) => {
     e.preventDefault();
-    setDeleteMsg(null);
-    setDeleteLoading(true);
-    try {
-      await api.delete('/perfil', { body: { password: deletePassword } });
-      logout();
-      router.push('/login');
-    } catch (err) {
-      setDeleteMsg(err.message);
-      setDeleteLoading(false);
-    }
+    await eliminarCuenta(deletePassword);
   };
 
   return (
@@ -260,7 +219,7 @@ export default function AjustesPage() {
             <button
               onClick={() => {
                 logout();
-                router.push('/login');
+                router.push(ROUTES.login);
               }}
               className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-xl text-sm transition-colors"
             >
