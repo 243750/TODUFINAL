@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useCallback } from 'react';
 import { api } from '../../../lib/api';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -28,21 +28,31 @@ export default function useGamificacion() {
   const { user } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     if (!user?.id) {
       dispatch({ type: 'FETCH_SUCCESS', payload: PROGRESO_PREVIEW });
       return;
     }
-
-    let cancelled = false;
     dispatch({ type: 'FETCH_START' });
+    api.get(`/xp/progreso/${user.id}`, { auth: false })
+      .then((data) => dispatch({ type: 'FETCH_SUCCESS', payload: data }))
+      .catch((err) => dispatch({ type: 'FETCH_ERROR', payload: err.message }));
+  }, [user]);
 
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      dispatch({ type: 'FETCH_SUCCESS', payload: PROGRESO_PREVIEW });
+      return;
+    }
+    dispatch({ type: 'FETCH_START' });
     api.get(`/xp/progreso/${user.id}`, { auth: false })
       .then((data) => { if (!cancelled) dispatch({ type: 'FETCH_SUCCESS', payload: data }); })
       .catch((err) => { if (!cancelled) dispatch({ type: 'FETCH_ERROR', payload: err.message }); });
-
     return () => { cancelled = true; };
   }, [user]);
 
-  return state;
+  // Para llamar después de completar una tarea o jugar Farkle — sin esto,
+  // el XP/cartera se quedaba desactualizado hasta recargar la página.
+  return { ...state, refrescar: cargar };
 }
