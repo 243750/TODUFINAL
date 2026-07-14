@@ -2,7 +2,12 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api, setToken, getStoredUser, setStoredUser, ApiError } from '../lib/api';
 
-const AuthContext = createContext(null);
+// Tipado explícito como "any" vía JSDoc: sin esto, TypeScript infiere el
+// contexto como `null` a secas (ya que es un archivo .jsx sin tipos), y el
+// check "if (!ctx) throw" en useAuth() termina angostando el tipo de
+// retorno a `never` para cualquier archivo .tsx que lo consuma — haciendo
+// que TypeScript piense que login/loginWithGoogle/etc "no son invocables".
+const AuthContext = createContext(/** @type {any} */ (null));
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -20,6 +25,14 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (email, password) => {
     const data = await api.post('/auth/login', { email, password }, { auth: false });
+    setToken(data.token);
+    setStoredUser(data.user);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  const loginWithGoogle = useCallback(async (googleIdToken) => {
+    const data = await api.post('/auth/google', { token: googleIdToken }, { auth: false });
     setToken(data.token);
     setStoredUser(data.user);
     setUser(data.user);
@@ -55,7 +68,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
