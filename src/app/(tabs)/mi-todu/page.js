@@ -9,11 +9,16 @@ import MiniToduHelper from './components/MiniToduHelper';
 export default function MiToduPage() {
   const { open: openSidebar } = useSidebar();
   const { progreso } = useGamificacion();
-
-  // NUEVO: Conectamos el Cerebro Autónomo indicándole que estamos en "mi-todu"
   const { emocionActual, mensaje } = useRobotState('mi-todu');
 
   const xpPct = progreso?.progresoPorcentaje ?? 0;
+  const racha = progreso?.rachaActual ?? 0;
+
+  // Lógica de colores según los días de racha
+  let rachaColor = 'text-slate-500'; // 0 días (Gris)
+  if (racha > 0 && racha <= 2) rachaColor = 'text-orange-400'; // 1-2 días (Naranja)
+  if (racha >= 3 && racha <= 6) rachaColor = 'text-emerald-400'; // 3-6 días (Verde)
+  if (racha >= 7) rachaColor = 'text-violet-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.5)]'; // 7+ días (Morado brillante)
 
   return (
     <div className="min-h-screen bg-[#150f27] text-slate-200 font-sans pb-28 overflow-x-hidden relative">
@@ -31,7 +36,6 @@ export default function MiToduPage() {
         <section className="flex flex-col items-center justify-center py-4">
           <div className="relative w-56 h-56 flex items-center justify-center">
             <div className="absolute inset-0 bg-gradient-to-t from-[#6d28d9]/30 to-transparent rounded-full blur-2xl"></div>
-            {/* El avatar reaccionará y hablará automáticamente gracias al hook */}
             <ToduAvatar emotion={emocionActual} mensaje={mensaje} size={260} />
           </div>
         </section>
@@ -53,7 +57,9 @@ export default function MiToduPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Racha</p>
-                  <h2 className="text-xl font-bold text-orange-400">🔥 {progreso?.rachaActual ?? 0} Días</h2>
+                  <h2 className={`text-xl font-bold transition-colors duration-500 ${rachaColor}`}>
+                    🔥 {racha} Días
+                  </h2>
                 </div>
               </div>
 

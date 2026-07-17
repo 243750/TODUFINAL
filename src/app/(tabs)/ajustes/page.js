@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, User, Lock, Trash2, LogOut, HelpCircle, X, ShieldCheck } from 'lucide-react';
 import { useSidebar } from '../../../context/SidebarContext';
@@ -29,8 +29,6 @@ export default function AjustesPage() {
     eliminarCuenta,
   } = usePerfil();
 
-  // --- Username (el email no es editable: el backend no tiene un
-  // endpoint para cambiarlo, solo /perfil/username) ---
   const [username, setUsername] = useState(user?.username || '');
 
   const handleUsername = async (e) => {
@@ -38,7 +36,6 @@ export default function AjustesPage() {
     await actualizarUsername(username);
   };
 
-  // --- Password ---
   const [passwordActual, setPasswordActual] = useState('');
   const [passwordNuevo, setPasswordNuevo] = useState('');
   const [passwordConfirmar, setPasswordConfirmar] = useState('');
@@ -51,7 +48,6 @@ export default function AjustesPage() {
     setPasswordConfirmar('');
   };
 
-  // --- Delete account ---
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
 
@@ -60,9 +56,31 @@ export default function AjustesPage() {
     await eliminarCuenta(deletePassword);
   };
 
+  // --- LÓGICA DE AVATARES ---
+  const AVATARES = ['👤', '👾', '🤖', '🦊', '🐱', '🐶', '🦄', '👻', '👽', '💀'];
+  const [avatarActivo, setAvatarActivo] = useState('👤');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setAvatarActivo(localStorage.getItem('todu_avatar') || '👤');
+    }
+  }, []);
+
+  const handleSelectAvatar = (av) => {
+    setAvatarActivo(av);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('todu_avatar', av);
+      // Avisamos a toda la app que el avatar cambió (para el Sidebar)
+      window.dispatchEvent(new Event('avatar_changed'));
+    }
+  };
+
+  // --- LÓGICA GOOGLE ---
+  // Detectar si el usuario viene de Google para ocultar el cambio de contraseña
+  const isGoogleProvider = user?.provider === 'google' || user?.app_metadata?.provider === 'google';
+
   return (
     <div className="min-h-screen bg-[#150f27] text-slate-200 font-sans pb-28">
-      {/* Header móvil (sin cambios respecto a lo que ya teníamos) */}
       <header className="flex items-center justify-between p-6 lg:hidden">
         <button onClick={openSidebar} className="text-slate-400 hover:text-white transition-colors">
           <Menu className="w-7 h-7" />
@@ -71,8 +89,6 @@ export default function AjustesPage() {
         <div className="w-7" />
       </header>
 
-      {/* Header de escritorio: título + botón de ayuda (el bell/avatar del
-          mockup de Stitch se ignora a propósito, ya vive en el sidebar) */}
       <div className="hidden lg:flex items-start justify-between px-8 pt-8">
         <div>
           <h1 className="text-2xl font-black text-white tracking-wide">Ajustes</h1>
@@ -89,10 +105,9 @@ export default function AjustesPage() {
       </div>
 
       <main className="max-w-md lg:max-w-3xl mx-auto px-6 pt-2 lg:pt-6 flex flex-col gap-5">
-        {/* Perfil actual */}
         <div className="flex items-center gap-3 bg-[#1f1638] border border-white/5 rounded-3xl p-5">
-          <div className="w-12 h-12 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
-            <User className="w-5 h-5 text-violet-300" />
+          <div className="w-12 h-12 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 text-xl shadow-inner">
+            {avatarActivo}
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-white truncate">{user?.username || 'Invitado'}</p>
@@ -100,7 +115,27 @@ export default function AjustesPage() {
           </div>
         </div>
 
-        {/* Perfil: username + email (email solo lectura) lado a lado en escritorio */}
+        {/* SECCIÓN NUEVA: AVATARES */}
+        <Card icon={User} title="Mi Avatar">
+          <p className="text-xs text-slate-400 mb-4">Elige cómo quieres verte en Todú. Esto se reflejará en tu menú de navegación.</p>
+          <div className="flex flex-wrap gap-3">
+            {AVATARES.map(av => (
+              <button
+                key={av}
+                type="button"
+                onClick={() => handleSelectAvatar(av)}
+                className={`w-12 h-12 text-2xl flex items-center justify-center rounded-2xl transition-all ${
+                  avatarActivo === av 
+                    ? 'bg-violet-500/30 border-2 border-violet-400 scale-110 shadow-[0_0_15px_rgba(139,92,246,0.5)]' 
+                    : 'bg-black/30 border border-white/5 hover:bg-white/10 hover:scale-105'
+                }`}
+              >
+                {av}
+              </button>
+            ))}
+          </div>
+        </Card>
+
         <Card icon={User} title="Información de perfil">
           <form onSubmit={handleUsername} className="space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
@@ -148,68 +183,69 @@ export default function AjustesPage() {
           </form>
         </Card>
 
-        {/* Seguridad: contraseña actual, luego nueva + confirmar lado a lado */}
-        <Card icon={ShieldCheck} title="Seguridad y contraseña">
-          <form onSubmit={handlePassword} className="space-y-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                Contraseña actual
-              </label>
-              <input
-                type="password"
-                value={passwordActual}
-                onChange={(e) => setPasswordActual(e.target.value)}
-                className={inputClass}
-                placeholder="Contraseña actual"
-                required
-              />
-            </div>
-            <div className="grid sm:grid-cols-2 gap-3">
+        {/* OCULTAMOS CONTRASEÑA SI ES GOOGLE */}
+        {!isGoogleProvider && (
+          <Card icon={ShieldCheck} title="Seguridad y contraseña">
+            <form onSubmit={handlePassword} className="space-y-3">
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Nueva contraseña
+                  Contraseña actual
                 </label>
                 <input
                   type="password"
-                  value={passwordNuevo}
-                  onChange={(e) => setPasswordNuevo(e.target.value)}
+                  value={passwordActual}
+                  onChange={(e) => setPasswordActual(e.target.value)}
                   className={inputClass}
-                  placeholder="Nueva contraseña"
+                  placeholder="Contraseña actual"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                  Confirmar nueva contraseña
-                </label>
-                <input
-                  type="password"
-                  value={passwordConfirmar}
-                  onChange={(e) => setPasswordConfirmar(e.target.value)}
-                  className={inputClass}
-                  placeholder="Repite la nueva contraseña"
-                  required
-                />
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Nueva contraseña
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordNuevo}
+                    onChange={(e) => setPasswordNuevo(e.target.value)}
+                    className={inputClass}
+                    placeholder="Nueva contraseña"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Confirmar nueva contraseña
+                  </label>
+                  <input
+                    type="password"
+                    value={passwordConfirmar}
+                    onChange={(e) => setPasswordConfirmar(e.target.value)}
+                    className={inputClass}
+                    placeholder="Repite la nueva contraseña"
+                    required
+                  />
+                </div>
               </div>
-            </div>
-            {passwordMsg && (
-              <p className={`text-xs font-semibold ${passwordMsg.type === 'ok' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                {passwordMsg.text}
-              </p>
-            )}
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={passwordLoading}
-                className="px-6 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-colors"
-              >
-                {passwordLoading ? 'Guardando...' : 'Cambiar contraseña'}
-              </button>
-            </div>
-          </form>
-        </Card>
+              {passwordMsg && (
+                <p className={`text-xs font-semibold ${passwordMsg.type === 'ok' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                  {passwordMsg.text}
+                </p>
+              )}
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="px-6 py-3 bg-white/10 hover:bg-white/15 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-colors"
+                >
+                  {passwordLoading ? 'Guardando...' : 'Cambiar contraseña'}
+                </button>
+              </div>
+            </form>
+          </Card>
+        )}
 
-        {/* Sesión + Zona de peligro: lado a lado en escritorio, apiladas en móvil */}
         <div className="grid lg:grid-cols-2 gap-5">
           <Card icon={LogOut} title="Sesión">
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
@@ -278,7 +314,6 @@ export default function AjustesPage() {
         </div>
       </main>
 
-      {/* Modal de ayuda (mismo patrón que en Tareas) */}
       {showHelp && (
         <div className="fixed inset-0 z-50 bg-[#150f27]/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
           <div className="bg-[#1f1638] border border-violet-500/30 rounded-[2rem] p-6 w-full max-w-sm relative shadow-[0_0_40px_rgba(139,92,246,0.15)]">

@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Plus, Check, X, MapPin } from 'lucide-react';
 import { api } from '../../lib/api';
 
-// Datos de prueba con el campo "toduTip"
 const MOCK_PLACES = [
   {
     id: '1',
@@ -65,9 +64,6 @@ const CATEGORIES = ['Todos', 'Cafeterías', 'Bibliotecas', 'Parques', 'Para come
 export default function PlacesPage() {
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Qué tarjeta tiene su mini-formulario de "agregar a mis tareas" abierto,
-  // y el estado de guardado por lugar (para no bloquear las demás tarjetas).
   const [openFormId, setOpenFormId] = useState(null);
   const [mapOpenId, setMapOpenId] = useState(null);
   const [hora, setHora] = useState('18:00');
@@ -79,9 +75,6 @@ export default function PlacesPage() {
     setSavingId(place.id);
     setErrorMsg(null);
     try {
-      // El backend de tareas no tiene un campo de hora/fecha propio, así que
-      // lo incluimos en la descripción — sigue siendo legible y no rompe el
-      // contrato de POST /tareas (titulo, descripcion, xpValor).
       await api.post('/tareas', {
         titulo: `Visitar ${place.name}`,
         descripcion: `${place.address} · ${hora} hrs`,
@@ -105,7 +98,6 @@ export default function PlacesPage() {
   return (
     <div className="min-h-screen bg-[#150f27] text-slate-200 font-sans pb-10 overflow-x-hidden">
       
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-[#150f27]/90 backdrop-blur-md px-6 py-4 flex items-center gap-4 border-b border-white/5">
         <Link href="/descubrir" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -118,10 +110,10 @@ export default function PlacesPage() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto flex flex-col mt-4">
+      {/* Se expandió el max-w para que luzca bien en escritorio */}
+      <main className="max-w-7xl mx-auto flex flex-col mt-4">
         
-        {/* Buscador */}
-        <div className="px-6 mb-4">
+        <div className="px-6 mb-4 max-w-md">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +130,6 @@ export default function PlacesPage() {
           </div>
         </div>
 
-        {/* Filtros Horizontales */}
         <div className="px-6 mb-6 overflow-x-auto pb-2 scrollbar-hide flex gap-2 snap-x">
           {CATEGORIES.map((category) => (
             <button
@@ -155,15 +146,14 @@ export default function PlacesPage() {
           ))}
         </div>
 
-        {/* Lista de Resultados */}
-        <div className="px-6 flex flex-col gap-6">
+        {/* CONTENEDOR GRID RESPONSIVO (Aquí está el cambio clave) */}
+        <div className="px-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredPlaces.length > 0 ? (
             filteredPlaces.map((place) => (
-              <div key={place.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden flex flex-col group cursor-pointer hover:border-white/20 transition-colors">
+              <div key={place.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden flex flex-col group cursor-pointer hover:border-white/20 transition-colors h-full">
                 
-                {/* 1. Imagen del Lugar */}
                 <div
-                  className="relative h-40 w-full overflow-hidden cursor-pointer"
+                  className="relative h-48 w-full overflow-hidden cursor-pointer flex-shrink-0"
                   onClick={() => setMapOpenId(mapOpenId === place.id ? null : place.id)}
                 >
                   <div 
@@ -179,9 +169,8 @@ export default function PlacesPage() {
                   </div>
                 </div>
 
-                {/* Mapa embebido (Google Maps, sin API key — abre al tocar la foto) */}
                 {mapOpenId === place.id && (
-                  <div className="border-b border-white/10">
+                  <div className="border-b border-white/10 flex-shrink-0">
                     <div className="w-full h-48">
                       <iframe
                         title={`Mapa de ${place.name}`}
@@ -202,8 +191,8 @@ export default function PlacesPage() {
                   </div>
                 )}
 
-                {/* 2. Info del Lugar */}
-                <div className="p-4 flex flex-col gap-2">
+                {/* Info flex-1 empuja los botones hacia abajo para alinear las tarjetas */}
+                <div className="p-4 flex flex-col gap-2 flex-1">
                   <div className="flex justify-between items-start gap-2">
                     <h2 className="text-sm font-bold text-white leading-tight line-clamp-2">{place.name}</h2>
                     <div className="flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20 flex-shrink-0">
@@ -228,38 +217,30 @@ export default function PlacesPage() {
                       </span>
                     )}
                   </div>
+
+                  <div className="pt-3 mt-auto flex items-end gap-3">
+                    <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center mb-1">
+                      <svg className="w-full h-full drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M75 45 C85 40, 90 60, 80 65" stroke="white" strokeWidth="6" strokeLinecap="round" fill="none"/>
+                        <ellipse cx="50" cy="60" rx="30" ry="28" fill="white" />
+                        <line x1="50" y1="32" x2="50" y2="15" stroke="white" strokeWidth="5" strokeLinecap="round" />
+                        <circle cx="50" cy="12" r="4" fill="#FFC107" />
+                        <path d="M35 55 Q40 48 45 55" stroke="#FFC107" strokeWidth="4" strokeLinecap="round" fill="none" />
+                        <path d="M55 55 Q60 48 65 55" stroke="#FFC107" strokeWidth="4" strokeLinecap="round" fill="none" />
+                      </svg>
+                    </div>
+
+                    <div className="relative flex-1 bg-[#1f1638] border border-white/10 rounded-2xl p-3 shadow-md">
+                      <div className="absolute -left-[6px] bottom-[12px] w-3 h-3 bg-[#1f1638] border-l border-b border-white/10 transform rotate-45"></div>
+                      <h4 className="text-[#FFC107] text-[11px] font-bold mb-1">Todú:</h4>
+                      <p className="text-[11px] text-slate-300 leading-snug font-medium">
+                        {place.toduTip}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                {/* 3. El Todú Tip (Estilo Imagen Referencia) */}
-                <div className="p-4 pt-1 flex items-end gap-3">
-                  
-                  {/* Avatar Blanco con Resplandor */}
-                  <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center mb-1">
-                    <svg className="w-full h-full drop-shadow-[0_0_8px_rgba(255,255,255,0.7)]" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M75 45 C85 40, 90 60, 80 65" stroke="white" strokeWidth="6" strokeLinecap="round" fill="none"/>
-                      <ellipse cx="50" cy="60" rx="30" ry="28" fill="white" />
-                      <line x1="50" y1="32" x2="50" y2="15" stroke="white" strokeWidth="5" strokeLinecap="round" />
-                      <circle cx="50" cy="12" r="4" fill="#FFC107" />
-                      <path d="M35 55 Q40 48 45 55" stroke="#FFC107" strokeWidth="4" strokeLinecap="round" fill="none" />
-                      <path d="M55 55 Q60 48 65 55" stroke="#FFC107" strokeWidth="4" strokeLinecap="round" fill="none" />
-                    </svg>
-                  </div>
-
-                  {/* Burbuja de Chat con flecha (Pointer) */}
-                  <div className="relative flex-1 bg-[#1f1638] border border-white/10 rounded-2xl p-3 shadow-md">
-                    {/* Flecha lateral de la burbuja */}
-                    <div className="absolute -left-[6px] bottom-[12px] w-3 h-3 bg-[#1f1638] border-l border-b border-white/10 transform rotate-45"></div>
-                    
-                    <h4 className="text-[#FFC107] text-[11px] font-bold mb-1">Todú:</h4>
-                    <p className="text-[11px] text-slate-300 leading-snug font-medium">
-                      {place.toduTip}
-                    </p>
-                  </div>
-
-                </div>
-
-                {/* 4. Agregar como tarea (crea una tarea real vía POST /tareas) */}
-                <div className="px-4 pb-4">
+                <div className="px-4 pb-4 mt-auto">
                   {savedIds.includes(place.id) ? (
                     <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
                       <Check className="w-4 h-4" />
@@ -304,7 +285,7 @@ export default function PlacesPage() {
               </div>
             ))
           ) : (
-            <div className="text-center py-10">
+            <div className="text-center py-10 md:col-span-2 lg:col-span-3 xl:col-span-4">
               <span className="text-4xl block mb-3">📍</span>
               <p className="text-sm text-slate-400 font-medium">No encontramos lugares con esos filtros.</p>
             </div>

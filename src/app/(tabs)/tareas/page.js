@@ -20,18 +20,7 @@ export default function TareasPage() {
   const { open: openSidebar } = useSidebar();
   const { user } = useAuth();
   
-  // NUEVO: Le decimos al hook en qué contexto estamos
-  const robotState = useRobotState('tareas'); 
-  const { emocionActual, mensaje, tareaCompletada } = robotState;
-
-  // Blindaje temporal: si por lo que sea el hook no trae estas dos funciones
-  const hablar = typeof robotState.hablar === 'function' ? robotState.hablar : () => {};
-  const forzarEmocion = typeof robotState.forzarEmocion === 'function' ? robotState.forzarEmocion : () => {};
-
-  if (typeof robotState.hablar !== 'function') {
-    console.error('[DIAGNÓSTICO] useRobotState() no trae "hablar". Esto NO debería pasar — avísale a Claude con esta línea.', robotState);
-  }
-
+  // 1. PRIMERO OBTENEMOS LAS TAREAS
   const {
     tareas,
     loading: loadingTareas,
@@ -41,6 +30,13 @@ export default function TareasPage() {
     eliminarTarea,
     subirEvidencia,
   } = useTareas();
+
+  // 2. LUEGO SE LAS PASAMOS AL CEREBRO DE TODÚ
+  const robotState = useRobotState('tareas', tareas); 
+  const { emocionActual, mensaje, tareaCompletada } = robotState;
+
+  const hablar = typeof robotState.hablar === 'function' ? robotState.hablar : () => {};
+  const forzarEmocion = typeof robotState.forzarEmocion === 'function' ? robotState.forzarEmocion : () => {};
 
   const { refrescar: refrescarGamificacion } = useGamificacion();
 
@@ -54,9 +50,6 @@ export default function TareasPage() {
     window.addEventListener('resize', updateAvatarSize);
     return () => window.removeEventListener('resize', updateAvatarSize);
   }, []);
-
-  // NOTA: Toda la lógica de "Frases Tareas", "timerSaludo" y "timerAmbiente"
-  // fue eliminada de aquí porque ahora el hook useRobotState('tareas') lo hace automáticamente.
 
   const handleDelete = async (tarea) => {
     const confirmado = window.confirm(`¿Eliminar "${tarea.titulo}"? Esta acción no se puede deshacer.`);
@@ -90,7 +83,6 @@ export default function TareasPage() {
 
       <main className="max-w-md mx-auto px-6 flex flex-col gap-4 lg:max-w-5xl lg:flex-row lg:items-start lg:gap-10 lg:px-10">
         
-        {/* AVATAR SECTION */}
         <section className="flex flex-col items-center justify-center w-full pt-2 pb-8 lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-8 lg:pb-0 lg:-translate-x-6">
           <div className="relative mx-auto mb-6" style={{ width: avatarSize + 20, height: avatarSize + 20 }}>
             <div className="absolute inset-0 bg-violet-500/30 rounded-full blur-2xl animate-pulse"></div>
@@ -108,7 +100,6 @@ export default function TareasPage() {
           </AnimatedButton>
         </section>
 
-        {/* TAREAS SECTION */}
         <div className="flex-1 w-full flex flex-col gap-4">
           <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tareas de Hoy</h2>
           {loadingTareas && <p className="text-sm text-slate-500 text-center py-8">Cargando tus tareas...</p>}
@@ -134,7 +125,6 @@ export default function TareasPage() {
         </div>
       </main>
 
-      {/* FAB MOBILE */}
       <div className="fixed bottom-24 w-full flex justify-center z-40 pointer-events-none lg:hidden">
         <button
           onClick={() => setShowCrear(true)}

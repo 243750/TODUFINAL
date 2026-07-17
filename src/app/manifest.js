@@ -3,10 +3,10 @@ export default function manifest() {
     name: 'Todú - Gestión Gamificada',
     short_name: 'Todú',
     description: 'PWA de gestión de tiempo y mitigación de procrastinación',
-    start_url: '/dashboard',
+    start_url: '/tareas', // MODIFICADO: Redirige a tareas en vez de un dashboard inexistente
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#0046b0', // El color azul de la marca
+    background_color: '#150f27', // Color de fondo de la app
+    theme_color: '#150f27', // Color de la barra de estado superior
     icons: [
       {
         src: '/favicon.ico',

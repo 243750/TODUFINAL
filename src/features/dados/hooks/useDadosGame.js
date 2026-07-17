@@ -36,7 +36,6 @@ export default function useDadosGame() {
   const [resultadoApuesta, setResultadoApuesta] = useState(null);
   const [verificandoPartida, setVerificandoPartida] = useState(true);
 
-  // 1. Verificar partida activa
   useEffect(() => {
     let cancelled = false;
     api.get('/juegos/farkle/activa')
@@ -54,17 +53,22 @@ export default function useDadosGame() {
     return () => { cancelled = true; };
   }, []);
 
-  // 2. REACCIÓN DE TODÚ A LA APUESTA (Arreglado)
+  // REACCIONES DE APUESTA (Nuevos Rangos)
   useEffect(() => {
     if (apuestaConfirmada || isRolling || winner) return;
     
     const porcentajeApuesta = apuestaMaxima > 0 ? apuestaXP / apuestaMaxima : 0;
     
-    if (apuestaXP <= 20 || porcentajeApuesta <= 0.25) {
-      setToduEmotion('happy'); // Se ríe de tu apuesta baja
-    } else if (apuestaXP >= 100 || porcentajeApuesta >= 0.75) {
-      setToduEmotion('surprised'); // Se asombra de la apuesta alta
-    } else {
+    // Si apuesta 10 (mínima), 15, o menos del 20% de su dinero -> Feliz/Se burla
+    if (apuestaXP <= 15 || porcentajeApuesta <= 0.20) {
+      setToduEmotion('happy'); 
+    } 
+    // Si apuesta la mitad o más de su dinero -> Se asusta
+    else if (apuestaXP >= 100 || porcentajeApuesta >= 0.50) {
+      setToduEmotion('scared'); 
+    } 
+    // Término medio
+    else {
       setToduEmotion('idle');
     }
   }, [apuestaXP, apuestaConfirmada, apuestaMaxima, isRolling, winner]);
@@ -79,7 +83,6 @@ export default function useDadosGame() {
       setApuestaConfirmada(true);
       if (userId) await refrescarGamificacion(userId);
     } catch (err) {
-      // Capturamos el mensaje exacto de M (ej. "Necesitas nivel 3")
       if (err instanceof ApiError) {
         setErrorApuesta(err.message || 'Error del servidor.');
       } else {
@@ -112,7 +115,7 @@ export default function useDadosGame() {
   const rollDice = () => {
     setIsRolling(true);
     setMessage('');
-    setToduEmotion('surprised'); // Sorprendido por el suspenso de los dados
+    setToduEmotion('surprised'); 
 
     const currentSelectedValues = dice.filter((d) => d.selected && !d.locked).map((d) => d.value);
     const newPoints = calculatePoints(currentSelectedValues);
@@ -133,7 +136,7 @@ export default function useDadosGame() {
 
       if (isBust(newDice.filter((d) => !d.locked).map((d) => d.value))) {
         setMessage('¡ZOUNDS! Perdiste el turno.');
-        setToduEmotion('happy'); // Se burla de ti si sacas Zounds
+        setToduEmotion('happy'); // Se ríe de que sacaste Zounds
         setTimeout(() => { passTurn('todu'); }, 2000);
       } else {
         setToduEmotion('idle');
@@ -196,7 +199,7 @@ export default function useDadosGame() {
         const unlockedVals = activeDice.filter((d) => !d.locked).map((d) => d.value);
         if (isBust(unlockedVals)) {
           setMessage('¡Todú sacó ZOUNDS!');
-          setToduEmotion('sad'); // Todú se pone TRISTE si él saca Zounds
+          setToduEmotion('sad'); // Todú se pone triste si ÉL saca Zounds
           await new Promise((r) => setTimeout(r, 2500));
           if (isMounted) {
             setToduEmotion('idle');
@@ -233,14 +236,14 @@ export default function useDadosGame() {
     return () => { isMounted = false; };
   }, [activePlayer, winner, toduScore]);
 
-  // 3. REACCIÓN FINAL (Arreglado)
+  // REACCIONES DE VICTORIA
   useEffect(() => {
     if (playerScore >= META_PUNTOS && !winner) {
       setWinner('Jugador');
-      setToduEmotion('sad'); // Tú ganas = Todú pierde y se pone triste
+      setToduEmotion('sad'); // Tú ganas -> Todú pierde y se pone triste
     } else if (toduScore >= META_PUNTOS && !winner) {
       setWinner('Todú');
-      setToduEmotion('happy'); // Todú gana = se burla de ti
+      setToduEmotion('happy'); // Todú gana -> Se burla de ti
     }
   }, [playerScore, toduScore, winner]);
 
