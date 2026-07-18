@@ -1,29 +1,30 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import { DIFICULTADES } from '../constants';
 
 export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTarea, editarTarea }) {
   const esEdicion = !!tareaInicial;
 
-  // Lógica para extraer la hora si estamos editando (Ej: "09:30 AM")
-  const parsearHoraInicial = () => {
-    if (!tareaInicial?.descripcion) return { h: '09', m: '00', a: 'AM' };
+  // Convierte "09:30 PM" (Backend) a "21:30" (Input Nativo HTML5)
+  const parsearHoraParaInput = () => {
+    if (!tareaInicial?.descripcion) return '09:00';
     const match = tareaInicial.descripcion.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
     if (match) {
-      let h = match[1];
-      if (h.length === 1) h = '0' + h; // Asegurar 2 dígitos
-      return { h, m: match[2], a: match[3]?.toUpperCase() || 'AM' };
+      let h = parseInt(match[1], 10);
+      const m = match[2];
+      const ampm = match[3]?.toUpperCase();
+      
+      if (ampm === 'PM' && h < 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      
+      return `${h.toString().padStart(2, '0')}:${m}`;
     }
-    return { h: '09', m: '00', a: 'AM' };
+    return '09:00';
   };
 
-  const tiempoInicial = parsearHoraInicial();
-  
   const [titulo, setTitulo] = useState(tareaInicial?.titulo || '');
-  const [hora, setHora] = useState(tiempoInicial.h);
-  const [minuto, setMinuto] = useState(tiempoInicial.m);
-  const [ampm, setAmpm] = useState(tiempoInicial.a);
+  const [horaNativa, setHoraNativa] = useState(parsearHoraParaInput());
   
   const dificultadInicial = tareaInicial
     ? DIFICULTADES.find((d) => d.xpValor === tareaInicial.xpValor)?.key || 'facil'
@@ -32,20 +33,27 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Convierte "21:30" (Input Nativo HTML5) a "09:30 PM" (Backend)
+  const formatearHoraParaBackend = (hora24) => {
+    const [hStr, mStr] = hora24.split(':');
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12; // Convierte 0 a 12 para media noche
+    return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!titulo.trim()) return;
+    if (!titulo.trim() || !horaNativa) return;
     setLoading(true);
     setError(null);
     try {
       const xpValor = DIFICULTADES.find((d) => d.key === dificultad).xpValor;
-      
-      // Guardamos la hora exacta como un string limpio de 12 hrs
-      const horarioFinal = `${hora}:${minuto} ${ampm}`;
+      const horarioFinal = formatearHoraParaBackend(horaNativa);
 
       const payload = {
         titulo: titulo.trim(),
-        descripcion: horarioFinal, // El backend guardará "09:30 AM"
+        descripcion: horarioFinal,
         xpValor,
       };
 
@@ -63,9 +71,6 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
       setLoading(false);
     }
   };
-
-  const horas = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
-  const minutos = ['00', '15', '30', '45'];
 
   return (
     <div className="fixed inset-0 z-50 bg-[#150f27]/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
@@ -92,30 +97,15 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
 
           <div>
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Horario</p>
-            <div className="flex gap-2">
-              <select 
-                value={hora} 
-                onChange={(e) => setHora(e.target.value)}
-                className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:border-violet-500/50 appearance-none text-center"
-              >
-                {horas.map(h => <option key={h} value={h} className="bg-[#1f1638]">{h}</option>)}
-              </select>
-              <span className="flex items-center text-slate-500 font-bold">:</span>
-              <select 
-                value={minuto} 
-                onChange={(e) => setMinuto(e.target.value)}
-                className="flex-1 bg-black/30 border border-white/10 rounded-xl px-3 py-3 text-sm text-white outline-none focus:border-violet-500/50 appearance-none text-center"
-              >
-                {minutos.map(m => <option key={m} value={m} className="bg-[#1f1638]">{m}</option>)}
-              </select>
-              <button
-                type="button"
-                onClick={() => setAmpm(ampm === 'AM' ? 'PM' : 'AM')}
-                className="flex-1 bg-violet-600/20 text-violet-300 border border-violet-500/30 hover:bg-violet-600/40 rounded-xl px-3 py-3 text-sm font-black transition-colors"
-              >
-                {ampm}
-              </button>
-            </div>
+            {/* INPUT NATIVO DE HORA HTML5 */}
+            <input 
+              type="time" 
+              value={horaNativa}
+              onChange={(e) => setHoraNativa(e.target.value)}
+              required
+              className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-lg text-center text-white outline-none focus:border-violet-500/50 transition-colors color-scheme-dark"
+              style={{ colorScheme: 'dark' }} // Forza el icono del reloj en blanco
+            />
           </div>
 
           <div>

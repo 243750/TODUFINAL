@@ -2,7 +2,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ClipboardList, Bot, Compass, Settings, LogOut, User } from 'lucide-react';
+import { 
+  ClipboardList, Bot, Compass, Settings, LogOut, 
+  User, Rocket, Zap, Flame, Sparkles, Ghost, Cpu, Gamepad2, Skull
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
 import useGamificacion from '../features/gamificacion/hooks/useGamificacion';
@@ -21,20 +24,33 @@ const NAV_SECTIONS = [
   },
 ];
 
+const AVATAR_MAP = {
+  user: User,
+  bot: Bot,
+  rocket: Rocket,
+  zap: Zap,
+  flame: Flame,
+  sparkles: Sparkles,
+  ghost: Ghost,
+  cpu: Cpu,
+  gamepad: Gamepad2,
+  skull: Skull
+};
+
 function SidebarContent({ onNavigate }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const [avatar, setAvatar] = useState('👤');
+  
+  const [avatarKey, setAvatarKey] = useState('user');
 
-  // Accedemos a los datos a través del objeto "progreso" de tu hook
   const { progreso } = useGamificacion();
   const { nivel, xpActual, xpDisponible } = progreso || {};
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setAvatar(localStorage.getItem('todu_avatar') || '👤');
-      const handleAvatar = () => setAvatar(localStorage.getItem('todu_avatar') || '👤');
+      setAvatarKey(localStorage.getItem('todu_avatar') || 'user');
+      const handleAvatar = () => setAvatarKey(localStorage.getItem('todu_avatar') || 'user');
       window.addEventListener('avatar_changed', handleAvatar);
       return () => window.removeEventListener('avatar_changed', handleAvatar);
     }
@@ -46,14 +62,16 @@ function SidebarContent({ onNavigate }) {
     router.push('/login');
   };
 
+  const ActiveAvatarIcon = AVATAR_MAP[avatarKey] || User;
+
   return (
     <div className="flex flex-col h-full bg-[#1f1638] text-slate-200">
       <div className="flex flex-col p-6 border-b border-white/5 gap-5">
         
-        {/* ENLACE DIRECTO A AJUSTES */}
+        {/* ENLACE DIRECTO A AJUSTES CON EL NUEVO AVATAR */}
         <Link href="/ajustes" onClick={onNavigate} className="flex items-center gap-3 p-2 -mx-2 rounded-2xl hover:bg-white/5 transition-colors group cursor-pointer">
-          <div className="w-11 h-11 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 text-xl shadow-inner">
-            {avatar}
+          <div className="w-11 h-11 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
+            <ActiveAvatarIcon className="w-5 h-5 text-violet-300" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-white truncate group-hover:text-violet-300 transition-colors">
@@ -63,6 +81,7 @@ function SidebarContent({ onNavigate }) {
           </div>
         </Link>
 
+        {/* TARJETA DE PROGRESO */}
         {user && (
           <div className="bg-[#2a1f4c]/50 rounded-xl p-3 border border-violet-500/20 shadow-inner">
             <div className="flex justify-between items-end mb-2">

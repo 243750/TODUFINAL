@@ -9,12 +9,13 @@ import MiniToduHelper from './components/MiniToduHelper';
 export default function MiToduPage() {
   const { open: openSidebar } = useSidebar();
   const { progreso } = useGamificacion();
-  const { emocionActual, mensaje } = useRobotState('mi-todu');
+  
+  // Agregamos hacerCosquillas del hook
+  const { emocionActual, mensaje, hacerCosquillas } = useRobotState('mi-todu');
 
   const xpPct = progreso?.progresoPorcentaje ?? 0;
   const racha = progreso?.rachaActual ?? 0;
 
-  // Lógica de colores según los días de racha
   let rachaColor = 'text-slate-500'; // 0 días (Gris)
   if (racha > 0 && racha <= 2) rachaColor = 'text-orange-400'; // 1-2 días (Naranja)
   if (racha >= 3 && racha <= 6) rachaColor = 'text-emerald-400'; // 3-6 días (Verde)
@@ -34,8 +35,12 @@ export default function MiToduPage() {
       <main className="max-w-md mx-auto px-6 flex flex-col gap-6">
 
         <section className="flex flex-col items-center justify-center py-4">
-          <div className="relative w-56 h-56 flex items-center justify-center">
-            <div className="absolute inset-0 bg-gradient-to-t from-[#6d28d9]/30 to-transparent rounded-full blur-2xl"></div>
+          {/* ENVOLTORIO CLICKEABLE CON EFECTOS */}
+          <div 
+            className="relative w-56 h-56 flex items-center justify-center cursor-pointer active:scale-95 transition-transform z-10"
+            onClick={hacerCosquillas}
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-[#6d28d9]/30 to-transparent rounded-full blur-2xl pointer-events-none"></div>
             <ToduAvatar emotion={emocionActual} mensaje={mensaje} size={260} />
           </div>
         </section>

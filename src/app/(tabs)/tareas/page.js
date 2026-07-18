@@ -20,7 +20,6 @@ export default function TareasPage() {
   const { open: openSidebar } = useSidebar();
   const { user } = useAuth();
   
-  // 1. PRIMERO OBTENEMOS LAS TAREAS
   const {
     tareas,
     loading: loadingTareas,
@@ -31,15 +30,10 @@ export default function TareasPage() {
     subirEvidencia,
   } = useTareas();
 
-  // 2. LUEGO SE LAS PASAMOS AL CEREBRO DE TODÚ
   const robotState = useRobotState('tareas', tareas); 
-  const { emocionActual, mensaje, tareaCompletada } = robotState;
-
-  const hablar = typeof robotState.hablar === 'function' ? robotState.hablar : () => {};
-  const forzarEmocion = typeof robotState.forzarEmocion === 'function' ? robotState.forzarEmocion : () => {};
+  const { emocionActual, mensaje, tareaCompletada, hacerCosquillas } = robotState;
 
   const { refrescar: refrescarGamificacion } = useGamificacion();
-
   const [avatarSize, setAvatarSize] = useState(170);
 
   useEffect(() => {
@@ -85,12 +79,16 @@ export default function TareasPage() {
         
         <section className="flex flex-col items-center justify-center w-full pt-2 pb-8 lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-8 lg:pb-0 lg:-translate-x-6">
           <div className="relative mx-auto mb-6" style={{ width: avatarSize + 20, height: avatarSize + 20 }}>
-            <div className="absolute inset-0 bg-violet-500/30 rounded-full blur-2xl animate-pulse"></div>
-            <div className="absolute -top-2 -left-4 w-3 h-3 bg-yellow-400 rounded-full blur-[2px] animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-            <div className="absolute top-1/2 -right-6 w-2 h-2 bg-violet-300 rounded-full blur-[1px] animate-bounce" style={{ animationDelay: '0.5s' }}></div>
-            <div className="absolute -bottom-2 -left-2 w-2.5 h-2.5 bg-rose-400 rounded-full blur-[1px] animate-bounce" style={{ animationDelay: '0.8s' }}></div>
+            <div className="absolute inset-0 bg-violet-500/30 rounded-full blur-2xl animate-pulse pointer-events-none"></div>
+            <div className="absolute -top-2 -left-4 w-3 h-3 bg-yellow-400 rounded-full blur-[2px] animate-bounce pointer-events-none" style={{ animationDelay: '0.2s' }}></div>
+            <div className="absolute top-1/2 -right-6 w-2 h-2 bg-violet-300 rounded-full blur-[1px] animate-bounce pointer-events-none" style={{ animationDelay: '0.5s' }}></div>
+            <div className="absolute -bottom-2 -left-2 w-2.5 h-2.5 bg-rose-400 rounded-full blur-[1px] animate-bounce pointer-events-none" style={{ animationDelay: '0.8s' }}></div>
             
-            <div className="absolute inset-0 flex items-center justify-center overflow-visible">
+            {/* ENVOLTORIO CLICKEABLE CON z-10 PARA RECIBIR EL CLICK */}
+            <div 
+              className="absolute inset-0 z-10 flex items-center justify-center overflow-visible cursor-pointer active:scale-95 transition-transform"
+              onClick={hacerCosquillas}
+            >
               <ToduAvatar emotion={emocionActual} mensaje={mensaje} size={avatarSize} />
             </div>
           </div>

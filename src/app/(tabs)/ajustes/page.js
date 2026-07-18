@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, User, Lock, Trash2, LogOut, HelpCircle, X, ShieldCheck } from 'lucide-react';
+import { 
+  Menu, Lock, Trash2, LogOut, HelpCircle, X, ShieldCheck,
+  User, Bot, Rocket, Zap, Flame, Sparkles, Ghost, Cpu, Gamepad2, Skull
+} from 'lucide-react';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
 import { ROUTES } from '../../../lib/routes';
@@ -10,6 +13,21 @@ import Card from '../../../features/perfil/components/Card';
 
 const inputClass =
   'w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-violet-500/50 transition-colors disabled:opacity-40';
+
+const AVATAR_MAP = {
+  user: User,
+  bot: Bot,
+  rocket: Rocket,
+  zap: Zap,
+  flame: Flame,
+  sparkles: Sparkles,
+  ghost: Ghost,
+  cpu: Cpu,
+  gamepad: Gamepad2,
+  skull: Skull
+};
+
+const AVATARES_KEYS = Object.keys(AVATAR_MAP);
 
 export default function AjustesPage() {
   const { open: openSidebar } = useSidebar();
@@ -56,28 +74,24 @@ export default function AjustesPage() {
     await eliminarCuenta(deletePassword);
   };
 
-  // --- LÓGICA DE AVATARES ---
-  const AVATARES = ['👤', '👾', '🤖', '🦊', '🐱', '🐶', '🦄', '👻', '👽', '💀'];
-  const [avatarActivo, setAvatarActivo] = useState('👤');
+  const [avatarActivo, setAvatarActivo] = useState('user');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setAvatarActivo(localStorage.getItem('todu_avatar') || '👤');
+      setAvatarActivo(localStorage.getItem('todu_avatar') || 'user');
     }
   }, []);
 
-  const handleSelectAvatar = (av) => {
-    setAvatarActivo(av);
+  const handleSelectAvatar = (avKey) => {
+    setAvatarActivo(avKey);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('todu_avatar', av);
-      // Avisamos a toda la app que el avatar cambió (para el Sidebar)
+      localStorage.setItem('todu_avatar', avKey);
       window.dispatchEvent(new Event('avatar_changed'));
     }
   };
 
-  // --- LÓGICA GOOGLE ---
-  // Detectar si el usuario viene de Google para ocultar el cambio de contraseña
   const isGoogleProvider = user?.provider === 'google' || user?.app_metadata?.provider === 'google';
+  const ActiveAvatarIcon = AVATAR_MAP[avatarActivo] || User;
 
   return (
     <div className="min-h-screen bg-[#150f27] text-slate-200 font-sans pb-28">
@@ -105,9 +119,9 @@ export default function AjustesPage() {
       </div>
 
       <main className="max-w-md lg:max-w-3xl mx-auto px-6 pt-2 lg:pt-6 flex flex-col gap-5">
-        <div className="flex items-center gap-3 bg-[#1f1638] border border-white/5 rounded-3xl p-5">
-          <div className="w-12 h-12 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 text-xl shadow-inner">
-            {avatarActivo}
+        <div className="flex items-center gap-4 bg-[#1f1638] border border-white/5 rounded-3xl p-5">
+          <div className="w-14 h-14 rounded-2xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
+            <ActiveAvatarIcon className="w-7 h-7 text-violet-300" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-white truncate">{user?.username || 'Invitado'}</p>
@@ -115,24 +129,26 @@ export default function AjustesPage() {
           </div>
         </div>
 
-        {/* SECCIÓN NUEVA: AVATARES */}
         <Card icon={User} title="Mi Avatar">
           <p className="text-xs text-slate-400 mb-4">Elige cómo quieres verte en Todú. Esto se reflejará en tu menú de navegación.</p>
           <div className="flex flex-wrap gap-3">
-            {AVATARES.map(av => (
-              <button
-                key={av}
-                type="button"
-                onClick={() => handleSelectAvatar(av)}
-                className={`w-12 h-12 text-2xl flex items-center justify-center rounded-2xl transition-all ${
-                  avatarActivo === av 
-                    ? 'bg-violet-500/30 border-2 border-violet-400 scale-110 shadow-[0_0_15px_rgba(139,92,246,0.5)]' 
-                    : 'bg-black/30 border border-white/5 hover:bg-white/10 hover:scale-105'
-                }`}
-              >
-                {av}
-              </button>
-            ))}
+            {AVATARES_KEYS.map(avKey => {
+              const IconComponent = AVATAR_MAP[avKey];
+              return (
+                <button
+                  key={avKey}
+                  type="button"
+                  onClick={() => handleSelectAvatar(avKey)}
+                  className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all ${
+                    avatarActivo === avKey 
+                      ? 'bg-violet-500/30 border-2 border-violet-400 scale-110 shadow-[0_0_15px_rgba(139,92,246,0.5)] text-violet-300' 
+                      : 'bg-black/30 border border-white/5 hover:bg-white/10 hover:scale-105 text-slate-400'
+                  }`}
+                >
+                  <IconComponent className="w-6 h-6" />
+                </button>
+              );
+            })}
           </div>
         </Card>
 
@@ -183,7 +199,6 @@ export default function AjustesPage() {
           </form>
         </Card>
 
-        {/* OCULTAMOS CONTRASEÑA SI ES GOOGLE */}
         {!isGoogleProvider && (
           <Card icon={ShieldCheck} title="Seguridad y contraseña">
             <form onSubmit={handlePassword} className="space-y-3">
@@ -314,6 +329,7 @@ export default function AjustesPage() {
         </div>
       </main>
 
+      {/* Modal de Ayuda */}
       {showHelp && (
         <div className="fixed inset-0 z-50 bg-[#150f27]/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
           <div className="bg-[#1f1638] border border-violet-500/30 rounded-[2rem] p-6 w-full max-w-sm relative shadow-[0_0_40px_rgba(139,92,246,0.15)]">

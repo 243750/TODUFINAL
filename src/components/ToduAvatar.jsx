@@ -46,8 +46,9 @@ export default function ToduAvatar({ emotion = 'idle', mensaje = '', size = 110,
       
       {/* GLOBO DE DIÁLOGO */}
       {mensaje && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-50 animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-300 pointer-events-none">
-          <div className="bg-white text-violet-900 text-xs font-black px-4 py-2.5 rounded-2xl rounded-bl-sm shadow-[0_10px_25px_rgba(139,92,246,0.3)] whitespace-nowrap border-2 border-violet-100 relative">
+        // Ajustamos -top-10 a -top-2 y en tablets a -top-6 para no tapar los títulos
+        <div className="absolute -top-2 md:-top-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-300 pointer-events-none">
+          <div className="bg-white text-violet-900 text-[11px] font-black px-4 py-2.5 rounded-2xl rounded-bl-sm shadow-[0_10px_25px_rgba(139,92,246,0.3)] whitespace-nowrap border-2 border-violet-100 relative">
             {mensaje}
             {/* Colita del globo */}
             <div className="absolute -bottom-[8px] left-2 w-0 h-0 border-t-[8px] border-t-white border-r-[8px] border-r-transparent border-l-[8px] border-l-transparent drop-shadow-sm"></div>
