@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   ClipboardList, Bot, Compass, Settings, LogOut, 
-  User, Rocket, Zap, Flame, Sparkles, Ghost, Cpu, Gamepad2, Skull
+  User, Rocket, Zap, Flame, Sparkles, Ghost, Cpu, Gamepad2, Skull, Coins
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
@@ -97,12 +97,14 @@ function SidebarContent({ onNavigate }) {
             <div className="w-full bg-black/40 h-1.5 rounded-full overflow-hidden mb-3">
               <div className="bg-violet-500 h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${((xpActual || 0) % 1000) / 10}%` }}></div>
             </div>
+            {/* Coins: la cartera gastable (baja al apostar/comprar), distinta
+                del XP Total de arriba (que nunca baja y define tu nivel). */}
             <div className="bg-black/30 rounded-lg p-2.5 flex items-center justify-between border border-white/5">
               <div className="flex items-center gap-2">
-                <span className="text-base">🪙</span>
-                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Cartera</span>
+                <Coins className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">Coins</span>
               </div>
-              <span className="text-sm font-black text-amber-400">{xpDisponible || 0} XP</span>
+              <span className="text-sm font-black text-amber-400">{xpDisponible || 0}</span>
             </div>
           </div>
         )}

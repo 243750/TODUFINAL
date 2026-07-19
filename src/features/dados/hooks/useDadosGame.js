@@ -65,7 +65,7 @@ export default function useDadosGame() {
     } 
     // Si apuesta la mitad o más de su dinero -> Se asusta
     else if (apuestaXP >= 100 || porcentajeApuesta >= 0.50) {
-      setToduEmotion('scared'); 
+     setToduEmotion('surprised');
     } 
     // Término medio
     else {

@@ -8,16 +8,13 @@ export const calculatePoints = (values) => {
 
   const sorted = [...values].sort((a, b) => a - b);
 
-  // 1. Detección de Escaleras (Straight)
-  // Escalera pequeña (1-2-3-4-5) o grande (2-3-4-5-6)
   const isSmallStraight = [1, 2, 3, 4, 5].every((v) => sorted.includes(v));
   const isLargeStraight = [2, 3, 4, 5, 6].every((v) => sorted.includes(v));
 
   if (isSmallStraight || isLargeStraight) {
-    return 1500; // ¡Premio gordo por la escalera!
+    return 1500;
   }
 
-  // 2. Lógica tradicional de Farkle (1s, 5s y Tríos)
   let score = 0;
   const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
   values.forEach((v) => { if (v) counts[v]++; });
@@ -25,8 +22,9 @@ export const calculatePoints = (values) => {
   for (let i = 1; i <= 6; i++) {
     const count = counts[i];
     if (count >= 3) {
-      if (i === 1) score += 1000 + (count - 3) * 100;
-      else score += (i * 100) + (i === 5 ? (count - 3) * 50 : 0);
+      const valorTrio = i === 1 ? 1000 : i * 100;
+      const bonoPorExtra = valorTrio / 10;
+      score += valorTrio + (count - 3) * bonoPorExtra;
     } else {
       if (i === 1) score += count * 100;
       if (i === 5) score += count * 50;

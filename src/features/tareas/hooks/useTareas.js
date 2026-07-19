@@ -1,20 +1,37 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../../../lib/api';
 
 export default function useTareas() {
   const [tareas, setTareas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const pollingRef = useRef(null);
+
+  const cargarTareas = useCallback((mostrarLoading = false) => {
+    if (mostrarLoading) setLoading(true);
+    return api.get('/tareas/mis-tareas')
+      .then((data) => setTareas(data.tareas || []))
+      .catch((err) => setError(err.message))
+      .finally(() => { if (mostrarLoading) setLoading(false); });
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    api.get('/tareas/mis-tareas')
-      .then((data) => { if (!cancelled) setTareas(data.tareas || []); })
-      .catch((err) => { if (!cancelled) setError(err.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+    cargarTareas(true);
+
+    // Refresca sola cada 30 segundos — sin esto, el frontend nunca se
+    // entera de que una tarea pasó a "vencida" a menos que recargues
+    // la página a mano.
+    pollingRef.current = setInterval(() => {
+      if (!cancelled) cargarTareas(false);
+    }, 30000);
+
+    return () => {
+      cancelled = true;
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, [cargarTareas]);
 
   const crearTarea = useCallback(async (payload) => {
     const data = await api.post('/tareas', payload);
@@ -56,5 +73,6 @@ export default function useTareas() {
     editarTarea,
     eliminarTarea,
     subirEvidencia,
+    refrescar: () => cargarTareas(false),
   };
 }

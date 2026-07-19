@@ -13,7 +13,7 @@ export default function ToduAvatar({ emotion = 'idle', mensaje = '', size = 110,
   // Efecto Maestro: Controla los inputs descubiertos por la ingeniería inversa
   useEffect(() => {
     if (!rive) return;
-    
+    window.__todoRive = rive; // TEMPORAL: para poder probar desde la consola
     try {
       // Obtenemos los inputs directamente de la máquina de estados
       const inputs = rive.stateMachineInputs('State Machine 1');
@@ -27,17 +27,17 @@ export default function ToduAvatar({ emotion = 'idle', mensaje = '', size = 110,
       if (expressions) {
         // Mapeamos los nombres de texto a los números que Rive espera
         const EMOCION_A_NUMERO = {
-          'idle': 0, 'normal smile_face': 0,
-          'happy': 1, 'super happy_face': 1,
-          'sad': 2, 'sad_face': 2,
-          'scared': 3, 'scared_face': 3,
-          'surprised': 4, 'surprised_face': 4
+          'idle': 1, 'normal smile_face': 1,
+          'happy': 2, 'super happy_face': 2,
+          'sad': 3, 'sad_face': 3,
+          'scared': 4, 'scared_face': 4,
+          'surprised': 5, 'surprised_face': 5
         };
         // Asignamos el valor numérico, por defecto 0 (idle)
-        expressions.value = EMOCION_A_NUMERO[emotion] ?? 0;
+        expressions.value = EMOCION_A_NUMERO[emotion] ?? 1;
       }
     } catch (e) {
-      // Si Rive aún se está preparando, ignoramos el error
+      console.error('[DIAGNÓSTICO ToduAvatar]', e);
     }
   }, [rive, emotion]);
 

@@ -1,7 +1,12 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-// === DICCIONARIOS DE FRASES (SIN EMOJIS) ===
+// Tabla CONFIRMADA visualmente en el editor de Rive (18 jul 2026) — el
+// mapa número<->emoción vive únicamente en ToduAvatar.jsx. Aquí solo se
+// usan los nombres en texto: 'idle' | 'happy' | 'sad' | 'scared' | 'surprised'.
+// No volver a "descubrir" esto por ingeniería inversa si el .riv se
+// vuelve a editar — confirmar de nuevo con el editor antes de tocar código.
+
 const FRASES_MI_TODU = [
   "Sabias que beber agua mejora tu enfoque un 30 por ciento",
   "Dormir 8 horas es tu mejor hack de productividad",
@@ -58,7 +63,11 @@ const FRASES_ALERTA = [
   "Echale un ojo al reloj tenemos trabajo"
 ];
 
-// Helper para convertir "09:30 PM" a objeto Date de hoy
+// Cada cuánto se REPITE el mensaje de "ya viene" mientras la tarea
+// siga sin completarse ni vencerse (la cara se queda asustada todo
+// este tiempo, solo el TEXTO reaparece con esta frecuencia).
+const INTERVALO_REPETIR_AVISO_MS = 3 * 60 * 1000; // 3 minutos
+
 const parseTimeToToday = (timeStr) => {
   if (!timeStr) return null;
   const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
@@ -68,7 +77,7 @@ const parseTimeToToday = (timeStr) => {
   m = parseInt(m, 10);
   if (ampm && ampm.toUpperCase() === 'PM' && h < 12) h += 12;
   if (ampm && ampm.toUpperCase() === 'AM' && h === 12) h = 0;
-  
+
   const now = new Date();
   now.setHours(h, m, 0, 0);
   return now;
@@ -77,8 +86,7 @@ const parseTimeToToday = (timeStr) => {
 export default function useRobotState(contexto = null, tareas = []) {
   const [emocionActual, setEmocionActual] = useState('idle');
   const [mensaje, setMensaje] = useState('');
-  
-  // Referencia sincrónica para que los cronómetros sepan siempre cómo se siente Todú
+
   const emocionRef = useRef('idle');
 
   const emocionTimer = useRef(null);
@@ -86,77 +94,92 @@ export default function useRobotState(contexto = null, tareas = []) {
   const ambienteTimer = useRef(null);
   const checkTareasTimer = useRef(null);
 
-  // CICLO AUTÓNOMO (Bucle para que hable solo a intervalos más naturales)
+  // Guarda, por cada tarea con aviso activo, cuándo fue la última vez
+  // que le mostramos el mensaje — así sabemos cuándo repetirlo (cada
+  // INTERVALO_REPETIR_AVISO_MS) sin repetirlo en cada revisión de 60s.
+  const ultimoAvisoRef = useRef(new Map());
+  // Tareas que ya reaccionaron como "vencida" (esta solo pasa UNA vez,
+  // no se repite como el aviso de "ya viene").
+  const fallidaDadaRef = useRef(new Set());
+
   const iniciarLoopAmbiental = useCallback(() => {
     if (!contexto) return;
     if (ambienteTimer.current) clearTimeout(ambienteTimer.current);
 
-    // Reducimos el tiempo: entre 12 y 20 segundos
     const espera = 12000 + Math.random() * 8000;
-    
+
     ambienteTimer.current = setTimeout(() => {
-      // Solo habla si su cara está normal
       if (emocionRef.current === 'idle') {
         const diccionario = contexto === 'mi-todu' ? FRASES_MI_TODU : FRASES_MOTIVACIONALES;
         const frase = diccionario[Math.floor(Math.random() * diccionario.length)];
-        
+
         setMensaje(frase);
         if (mensajeTimer.current) clearTimeout(mensajeTimer.current);
         mensajeTimer.current = setTimeout(() => setMensaje(''), 5000);
       }
-      iniciarLoopAmbiental(); // Vuelve a llamarse a sí mismo
+      iniciarLoopAmbiental();
     }, espera);
   }, [contexto]);
 
-  // FUNCIÓN MAESTRA DE CONTROL
+  /**
+   * FUNCIÓN MAESTRA DE CONTROL.
+   * duracionEmocion acepta un número (ms) para que la cara vuelva sola a
+   * 'idle' después de ese tiempo, o `null` para que la cara se quede
+   * "pegada" hasta que otra llamada a forzarEmocion la reemplace — esto
+   * es lo que usa el aviso de tarea próxima, que debe seguir asustado
+   * hasta que la tarea se complete o se pierda.
+   */
   const forzarEmocion = useCallback((nuevaEmocion, nuevoMensaje = '', duracionEmocion = 10000, duracionMensaje = 5000) => {
-    // 1. Limpiamos cualquier acción anterior para que no se traslapen
     if (emocionTimer.current) clearTimeout(emocionTimer.current);
     if (mensajeTimer.current) clearTimeout(mensajeTimer.current);
     if (ambienteTimer.current) clearTimeout(ambienteTimer.current);
 
-    // 2. Aplicamos la nueva emoción
     setEmocionActual(nuevaEmocion);
     emocionRef.current = nuevaEmocion;
-    
-    // 3. Aplicamos el nuevo texto (o lo borramos si vienen cosquillas vacías)
+
     if (nuevoMensaje) {
       setMensaje(nuevoMensaje);
-      mensajeTimer.current = setTimeout(() => setMensaje(''), duracionMensaje);
+      if (duracionMensaje !== null) {
+        mensajeTimer.current = setTimeout(() => setMensaje(''), duracionMensaje);
+      }
     } else {
       setMensaje('');
     }
 
-    // 4. Temporizador para regresar a la normalidad
-    emocionTimer.current = setTimeout(() => {
-      setEmocionActual('idle');
-      emocionRef.current = 'idle';
-      iniciarLoopAmbiental(); // Retoma su plática casual
-    }, duracionEmocion);
+    if (duracionEmocion !== null) {
+      emocionTimer.current = setTimeout(() => {
+        setEmocionActual('idle');
+        emocionRef.current = 'idle';
+        iniciarLoopAmbiental();
+      }, duracionEmocion);
+    }
+    // Si duracionEmocion es null, no se agenda ningún regreso automático:
+    // la cara se queda así hasta la siguiente llamada a forzarEmocion.
   }, [iniciarLoopAmbiental]);
 
-  // COSQUILLAS (Clic en el avatar)
   const hacerCosquillas = useCallback(() => {
-    // Fuerzan la emoción happy durante 2 segundos, sin mostrar ningún texto
     forzarEmocion('happy', '', 2000, 0);
   }, [forzarEmocion]);
 
-  // EVENTOS DE TAREAS
-  const tareaCompletada = useCallback(() => {
+  const tareaCompletada = useCallback((tareaId = null) => {
     const frase = FRASES_EXITO[Math.floor(Math.random() * FRASES_EXITO.length)];
-    forzarEmocion('happy', frase, 10000, 5000);
+    forzarEmocion('happy', frase, 10000, 3000);
+    // Limpia el registro de avisos/fallos de esta tarea, por si acaso
+    // se vuelve a usar el mismo id en algún escenario raro.
+    if (tareaId) {
+      ultimoAvisoRef.current.delete(tareaId);
+      fallidaDadaRef.current.delete(tareaId);
+    }
   }, [forzarEmocion]);
 
   const tareaFallida = useCallback(() => {
     const frase = FRASES_FRACASO[Math.floor(Math.random() * FRASES_FRACASO.length)];
-    forzarEmocion('sad', frase, 10000, 5000);
+    forzarEmocion('sad', frase, 180000, 5000);
   }, [forzarEmocion]);
 
-  // ARRANQUE DEL CICLO AMBIENTAL (Primera carga)
   useEffect(() => {
     if (!contexto) return;
-    
-    // Hacer que lance el primer mensaje muy rápido (2.5 segundos) al entrar
+
     ambienteTimer.current = setTimeout(() => {
       if (emocionRef.current === 'idle') {
         const diccionario = contexto === 'mi-todu' ? FRASES_MI_TODU : FRASES_MOTIVACIONALES;
@@ -164,7 +187,7 @@ export default function useRobotState(contexto = null, tareas = []) {
         setMensaje(frase);
         mensajeTimer.current = setTimeout(() => setMensaje(''), 5000);
       }
-      iniciarLoopAmbiental(); // Después del primero, arranca el ciclo normal
+      iniciarLoopAmbiental();
     }, 2500);
 
     return () => {
@@ -172,14 +195,29 @@ export default function useRobotState(contexto = null, tareas = []) {
     };
   }, [contexto, iniciarLoopAmbiental]);
 
-  // VIGILANTE DE TAREAS (Cada minuto revisa si falta poco)
+  // VIGILANTE DE TAREAS (cada minuto revisa "por vencer" y "vencidas")
   useEffect(() => {
     if (contexto !== 'tareas' || !tareas || tareas.length === 0) return;
 
     const revisarTareas = () => {
       const ahora = new Date();
+      const ahoraMs = ahora.getTime();
+
       for (const tarea of tareas) {
-        if (tarea.estado === 'completed') continue;
+        // --- ¿Ya se venció? Reacción triste, una sola vez por tarea. ---
+        if (tarea.estado === 'vencida' || tarea.estado === 'expired') {
+          if (!fallidaDadaRef.current.has(tarea.id)) {
+            fallidaDadaRef.current.add(tarea.id);
+            ultimoAvisoRef.current.delete(tarea.id);
+            tareaFallida();
+          }
+          continue;
+        }
+
+        if (tarea.estado === 'completed') {
+          ultimoAvisoRef.current.delete(tarea.id);
+          continue;
+        }
 
         const horaTarea = parseTimeToToday(tarea.descripcion);
         if (!horaTarea) continue;
@@ -187,12 +225,38 @@ export default function useRobotState(contexto = null, tareas = []) {
         const diferenciaMs = horaTarea - ahora;
         const minutosFaltantes = Math.floor(diferenciaMs / 60000);
 
-        // Si faltan exactamente entre 0 y 10 minutos
+        // --- ¿Ya se pasó la hora y nunca se completó? Triste, casi al
+        // instante (máximo 60s de retraso, sin depender de que el
+        // backend termine de marcarla como "vencida" — el frontend ya
+        // sabe la hora, no necesita esperar confirmación del servidor). ---
+        if (diferenciaMs < 0 && !fallidaDadaRef.current.has(tarea.id)) {
+          fallidaDadaRef.current.add(tarea.id);
+          ultimoAvisoRef.current.delete(tarea.id);
+          tareaFallida();
+          continue;
+        }
+
+        // --- ¿Faltan 10 minutos o menos? ---
         if (minutosFaltantes >= 0 && minutosFaltantes <= 10) {
-          const fraseBase = FRASES_ALERTA[Math.floor(Math.random() * FRASES_ALERTA.length)];
-          const fraseFinal = `${fraseBase} ${tarea.titulo}`;
-          forzarEmocion('surprised', fraseFinal, 10000, 5000);
-          break; // Solo alerta por la primera que encuentre
+          const ultimoAviso = ultimoAvisoRef.current.get(tarea.id);
+          const debeAvisar = !ultimoAviso || (ahoraMs - ultimoAviso) >= INTERVALO_REPETIR_AVISO_MS;
+
+          if (debeAvisar) {
+            ultimoAvisoRef.current.set(tarea.id, ahoraMs);
+            const fraseBase = FRASES_ALERTA[Math.floor(Math.random() * FRASES_ALERTA.length)];
+            const fraseFinal = `${fraseBase} ${tarea.titulo}`;
+            // duracionEmocion = null: la cara se queda asustada hasta
+            // completar la tarea o hasta que se pierda — el mensaje sí
+            // se repetirá cada INTERVALO_REPETIR_AVISO_MS mientras tanto.
+            forzarEmocion('scared', fraseFinal, null, 6000);
+            break; // Solo un aviso a la vez
+          } else if (emocionRef.current !== 'scared') {
+            // Si por algún motivo la cara regresó a otro estado (por
+            // ejemplo cosquillas) mientras el aviso seguía activo,
+            // la regresamos a asustada sin repetir el mensaje todavía.
+            setEmocionActual('scared');
+            emocionRef.current = 'scared';
+          }
         }
       }
     };
@@ -203,22 +267,23 @@ export default function useRobotState(contexto = null, tareas = []) {
     return () => {
       if (checkTareasTimer.current) clearInterval(checkTareasTimer.current);
     };
-  }, [contexto, tareas, forzarEmocion]);
+  }, [contexto, tareas, forzarEmocion, tareaFallida]);
 
-  // LIMPIEZA GENERAL AL DESMONTAR
   useEffect(() => {
     return () => {
       if (emocionTimer.current) clearTimeout(emocionTimer.current);
       if (mensajeTimer.current) clearTimeout(mensajeTimer.current);
+      if (ambienteTimer.current) clearTimeout(ambienteTimer.current);
+      if (checkTareasTimer.current) clearInterval(checkTareasTimer.current);
     };
   }, []);
 
-  return { 
-    emocionActual, 
-    mensaje, 
-    tareaCompletada, 
-    tareaFallida, 
+  return {
+    emocionActual,
+    mensaje,
+    tareaCompletada,
+    tareaFallida,
     forzarEmocion,
-    hacerCosquillas 
+    hacerCosquillas
   };
 }

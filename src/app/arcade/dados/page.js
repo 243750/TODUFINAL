@@ -77,14 +77,14 @@ export default function DadosPage() {
         ) : isFirstRoll && !apuestaConfirmada ? (
           <div className="bg-black/60 border-2 border-amber-500/30 rounded-3xl p-5 mb-6 relative z-30">
             <div className="flex justify-between items-center mb-1">
-              <p className="text-[10px] text-amber-400 font-black uppercase tracking-widest">Apuesta tu XP</p>
-              <p className="text-xl font-black text-amber-400">{apuestaXP} XP</p>
+              <p className="text-[10px] text-amber-400 font-black uppercase tracking-widest">Apuesta tus Coins</p>
+              <p className="text-xl font-black text-amber-400">{apuestaXP} Coins</p>
             </div>
-            <p className="text-[10px] text-slate-500 font-bold mb-3">Cartera disponible: {xpDisponible || 0} XP</p>
+            <p className="text-[10px] text-slate-500 font-bold mb-3">Coins disponibles: {xpDisponible || 0}</p>
 
             {xpDisponible < apuestaMinima ? (
               <p className="text-xs font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-center">
-                No tienes XP suficiente para apostar (mínimo {apuestaMinima} XP). Completa tareas para ganar más.
+                No tienes Coins suficientes para apostar (mínimo {apuestaMinima}). Completa tareas para ganar más.
               </p>
             ) : (
               <>
@@ -111,7 +111,7 @@ export default function DadosPage() {
                   disabled={cargandoApuesta}
                   className="w-full py-3 rounded-full font-black uppercase tracking-widest text-sm bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black transition-all active:scale-95"
                 >
-                  {cargandoApuesta ? 'Apostando...' : `Apostar y jugar (premio: ${apuestaXP * 2} XP)`}
+                  {cargandoApuesta ? 'Apostando...' : `Apostar y jugar (premio: ${apuestaXP * 2} Coins)`}
                 </button>
               </>
             )}
@@ -119,7 +119,7 @@ export default function DadosPage() {
         ) : apuestaConfirmada ? (
           <div className="flex justify-center mb-6 relative z-30">
             <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 rounded-full">
-              Apuesta activa: {apuestaXP} XP · Premio si ganas: {premioSiGanas} XP
+              Apuesta activa: {apuestaXP} Coins · Premio si ganas: {premioSiGanas} Coins
             </span>
           </div>
         ) : null}
@@ -202,7 +202,7 @@ export default function DadosPage() {
         {winner && (
           <div className="fixed inset-0 z-50 bg-[#050505]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center border-t-4 border-cyan-500">
              <div className="mb-6 bg-[#0b1120] rounded-full p-4 border border-white/10 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
-               <ToduAvatar emotion={winner === 'Jugador' ? 'scared' : 'happy'} size={180} zoom={1.5} />
+               <ToduAvatar emotion={winner === 'Jugador' ? 'surprised' : 'happy'} size={180} zoom={1.5} />
              </div>
              <h2 className={`text-4xl font-black tracking-widest mb-4 drop-shadow-[0_0_15px_currentColor] ${winner === 'Jugador' ? 'text-cyan-400' : 'text-purple-400'}`}>
                 {winner === 'Jugador' ? '¡GANASTE!' : 'TODÚ GANA'}
@@ -214,17 +214,17 @@ export default function DadosPage() {
 
              {resolviendoApuesta ? (
                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mb-6 animate-pulse">
-                 Sincronizando XP Total...
+                 Sincronizando tu cartera...
                </p>
              ) : resultadoApuesta ? (
                <div className={`mb-6 p-4 rounded-2xl border w-full max-w-xs mx-auto ${
                  resultadoApuesta.gano ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'
                }`}>
                  <p className={`text-sm font-black uppercase tracking-widest mb-2 ${resultadoApuesta.gano ? 'text-emerald-400' : 'text-rose-400'}`}>
-                   {resultadoApuesta.gano ? `+ ${resultadoApuesta.premio} XP GANADOS` : 'APUESTA PERDIDA'}
+                   {resultadoApuesta.gano ? `+ ${resultadoApuesta.premio} COINS GANADOS` : 'APUESTA PERDIDA'}
                  </p>
                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
-                   Tu Nueva Cartera: <span className="text-white">{resultadoApuesta.xpDisponible ?? 0} XP</span>
+                   Tus Nuevos Coins: <span className="text-white">{resultadoApuesta.xpDisponible ?? 0}</span>
                  </p>
                </div>
              ) : null}
@@ -253,6 +253,13 @@ export default function DadosPage() {
             </div>
             
             <div className="space-y-5 text-sm text-slate-300 font-medium">
+              <div className="bg-amber-950/30 rounded-xl p-4 border border-amber-500/20">
+                <h4 className="text-[10px] text-amber-400 font-black uppercase tracking-widest mb-2">¿Qué son los Coins?</h4>
+                <p className="text-xs leading-relaxed text-amber-100/80">
+                  Son tu cartera gastable — distinta de tu XP Total (el que nunca baja y define tu Nivel). Ganas Coins al completar tareas, y aquí los apuestas: si ganas, se duplican; si pierdes, se van. Tu Nivel nunca se ve afectado por Farkle.
+                </p>
+              </div>
+
               <p>Tira los 6 dados. Para sumar puntos y seguir tirando, <span className="text-white font-bold">debes seleccionar dados válidos</span>.</p>
               
               <div className="bg-black/50 rounded-xl p-4 border border-white/10 space-y-3">
@@ -271,6 +278,15 @@ export default function DadosPage() {
                 </li>
                 <li className="flex justify-between text-xs text-slate-400 italic">
                   <span>(ej. Trío de 4 = 400 pts)</span>
+                </li>
+                <li className="flex justify-between text-xs pt-2 border-t border-white/5">
+                  <span>Cada dado extra tras el trío</span> <span className="font-bold text-emerald-400">+1/10 del trío</span>
+                </li>
+                <li className="flex justify-between text-xs text-slate-400 italic">
+                  <span>(ej. cuatro 2 = 200 + 20 = 220)</span>
+                </li>
+                <li className="flex justify-between text-xs pt-2 border-t border-white/5">
+                  <span>Escalera completa (1-2-3-4-5 o 2-3-4-5-6)</span> <span className="font-bold text-yellow-400">1500 pts</span>
                 </li>
               </div>
 
