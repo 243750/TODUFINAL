@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import ToduAvatar from '../../../components/ToduAvatar';
 import useDadosGame from '../../../features/dados/hooks/useDadosGame';
@@ -18,11 +18,22 @@ export default function DadosPage() {
     resolviendoApuesta, resultadoApuesta, verificandoPartida, resolverApuesta
   } = useDadosGame();
 
+  // Evita que React (en desarrollo, con doble-montaje de efectos) mande
+  // la petición de resolver dos veces — la segunda le llegaba al backend
+  // con la partida ya cerrada, fallaba, y esa era la razón de que a veces
+  // se viera "Tus Nuevos Coins: 0" con un premio inventado en el cliente.
+  const resueltaRef = useRef(false);
+
   useEffect(() => {
-    if (winner && !resultadoApuesta && !resolviendoApuesta) {
-        resolverApuesta(winner === 'Jugador', user?.id);
+    if (winner && !resueltaRef.current) {
+      resueltaRef.current = true;
+      resolverApuesta(winner === 'Jugador', user?.id);
     }
-  }, [winner, resultadoApuesta, resolviendoApuesta, resolverApuesta, user]);
+  }, [winner, resolverApuesta, user]);
+
+  useEffect(() => {
+    if (!winner) resueltaRef.current = false;
+  }, [winner]);
 
   return (
     <div className="min-h-screen bg-[#050505] text-slate-200 font-sans pb-10 overflow-x-hidden relative selection:bg-cyan-500 selection:text-white">
@@ -256,7 +267,7 @@ export default function DadosPage() {
               <div className="bg-amber-950/30 rounded-xl p-4 border border-amber-500/20">
                 <h4 className="text-[10px] text-amber-400 font-black uppercase tracking-widest mb-2">¿Qué son los Coins?</h4>
                 <p className="text-xs leading-relaxed text-amber-100/80">
-                  Son tu cartera gastable — distinta de tu XP Total (el que nunca baja y define tu Nivel). Ganas Coins al completar tareas, y aquí los apuestas: si ganas, se duplican; si pierdes, se van. Tu Nivel nunca se ve afectado por Farkle.
+                  Son tu cartera gastable — distinta de tu XP Total (el que nunca baja y define tu Nivel). Ganas Coins al completar tareas, y aquí los apuestas: si ganas, se duplican (tu apuesta de vuelta + lo ganado); si pierdes, se van. Tu Nivel nunca se ve afectado por Farkle.
                 </p>
               </div>
 

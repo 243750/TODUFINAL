@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { calculatePoints, isBust, getScoringIndices, META_PUNTOS } from '../logic';
 import { api, ApiError } from '../../../lib/api';
 import useGamificacion from '../../gamificacion/hooks/useGamificacion';
-import useRobotState from '../../robot/hooks/useRobotState';
 
 const APUESTA_MINIMA = 10;
 const APUESTA_MAXIMA_ABSOLUTA = 5000;
@@ -21,7 +20,6 @@ export default function useDadosGame() {
   const [toduEmotion, setToduEmotion] = useState('idle');
 
   const { progreso, refrescar: refrescarGamificacion } = useGamificacion();
-  const { refrescar: refrescarRobot } = useRobotState(); 
 
   const xpDisponible = progreso?.xpDisponible ?? 0;
   const apuestaMaxima = Math.max(APUESTA_MINIMA, Math.min(APUESTA_MAXIMA_ABSOLUTA, xpDisponible));
@@ -65,7 +63,7 @@ export default function useDadosGame() {
     } 
     // Si apuesta la mitad o más de su dinero -> Se asusta
     else if (apuestaXP >= 100 || porcentajeApuesta >= 0.50) {
-     setToduEmotion('surprised');
+      setToduEmotion('scared'); 
     } 
     // Término medio
     else {
@@ -103,14 +101,13 @@ export default function useDadosGame() {
       });
       setResultadoApuesta({ gano, premio: data.premio ?? 0, xpDisponible: data.xpDisponible });
       if (userId) await refrescarGamificacion(userId);
-      refrescarRobot();
     } catch (err) {
       setResultadoApuesta({ gano, premio: gano ? apuestaXP * 2 : 0, xpDisponible: null });
     } finally {
       setResolviendoApuesta(false);
       setPartidaId(null);
     }
-  }, [partidaId, apuestaXP, refrescarGamificacion, refrescarRobot]);
+  }, [partidaId, apuestaXP, refrescarGamificacion]);
 
   const rollDice = () => {
     setIsRolling(true);

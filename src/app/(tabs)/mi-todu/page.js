@@ -133,7 +133,7 @@ export default function MiToduPage() {
                 <div>
                   <h4 className="text-white font-bold mb-0.5">Coins</h4>
                   <p className="text-slate-400 text-xs leading-relaxed">
-                    Tu cartera gastable. Sube junto con el XP al completar tareas, pero a diferencia del XP Total, <span className="text-white font-bold">sí puede bajar</span> — se usa para apostar en el Arcade y (pronto) para comprar accesorios y decoraciones.
+                    Tu cartera gastable. Sube junto con el XP al completar tareas, pero a diferencia del XP Total, <span className="text-white font-bold">sí puede bajar</span> — se usa para apostar en el Arcade y para comprar accesorios y decoraciones.
                   </p>
                 </div>
               </div>

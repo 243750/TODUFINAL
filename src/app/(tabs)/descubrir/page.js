@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Menu, Lock, Gamepad2, MapPin, ChevronRight, Beaker } from 'lucide-react';
+import { Menu, Lock, Gamepad2, MapPin, ChevronRight, HelpCircle, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSidebar } from '../../../context/SidebarContext';
 import useGamificacion from '../../../features/gamificacion/hooks/useGamificacion';
@@ -9,10 +9,9 @@ export default function DescubrirPage() {
   const { open: openSidebar } = useSidebar();
   const router = useRouter();
   const { progreso } = useGamificacion();
+  const [showHelp, setShowHelp] = useState(false);
 
-  // MODO DESARROLLADOR
-  const [modoDev, setModoDev] = useState(false);
-  const nivelActual = modoDev ? 5 : (progreso?.nivel ?? 0);
+  const nivelActual = progreso?.nivel ?? 0;
 
   const modulos = [
     {
@@ -21,7 +20,6 @@ export default function DescubrirPage() {
       description: 'Descubre lugares clave y conquista territorios en el campus.',
       icon: MapPin,
       color: 'from-emerald-500 to-teal-400',
-      // Foto de estudiantes en biblioteca/área común (mucho mejor que graduados)
       image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop',
       nivelRequerido: 2,
       route: '/places'
@@ -29,7 +27,7 @@ export default function DescubrirPage() {
     {
       id: 'arcade',
       title: 'Arcade',
-      description: 'Apuesta tu XP contra Todú en los clásicos juegos de casino.',
+      description: 'Apuesta tus Coins contra Todú en los clásicos juegos de casino.',
       icon: Gamepad2,
       color: 'from-cyan-500 to-blue-500',
       image: 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=800&auto=format&fit=crop',
@@ -56,36 +54,21 @@ export default function DescubrirPage() {
             Expande tu universo
           </span>
         </div>
-        
-        {/* BOTÓN SECRETO MODO DEV */}
+
         <button
-          onClick={() => setModoDev(!modoDev)}
-          className={`p-2 rounded-full border transition-colors shadow-lg z-10 ${
-            modoDev 
-              ? 'bg-amber-500/20 border-amber-500/50 text-amber-400' 
-              : 'bg-white/5 border-white/10 text-slate-500 hover:text-slate-300'
-          }`}
-          title="Modo Desarrollador (Saltar Niveles)"
+          onClick={() => setShowHelp(true)}
+          className="text-violet-400 hover:text-violet-300 transition-colors bg-violet-500/10 p-2 rounded-full border border-violet-500/20"
         >
-          <Beaker className="w-5 h-5" />
+          <HelpCircle className="w-5 h-5" />
         </button>
       </header>
 
       <main className="max-w-md mx-auto px-6 flex flex-col gap-6 mt-4">
-        
-        {modoDev && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 text-center animate-pulse">
-            <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">
-              🧪 Modo Dev Activo (Nivel 5 simulado)
-            </p>
-            <p className="text-[10px] text-amber-400/70 mt-1">Nota: El servidor puede seguir bloqueando acciones si tu nivel real no coincide.</p>
-          </div>
-        )}
 
         <div className="text-center mb-2">
           <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Tu Nivel Real</p>
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-violet-500/20 border-2 border-violet-500/30 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-            <span className="text-2xl font-black text-white">{progreso?.nivel ?? 0}</span>
+            <span className="text-2xl font-black text-white">{nivelActual}</span>
           </div>
         </div>
 
@@ -100,7 +83,6 @@ export default function DescubrirPage() {
                 disabled={isLocked}
                 className="relative w-full text-left rounded-3xl h-44 border-2 border-white/10 overflow-hidden group shadow-xl transition-transform active:scale-[0.98]"
               >
-                {/* Imagen de Fondo */}
                 <div 
                   className={`absolute inset-0 bg-cover bg-center transition-all duration-700 ${
                     isLocked ? 'grayscale opacity-20' : 'opacity-40 group-hover:scale-110 group-hover:opacity-60'
@@ -108,7 +90,6 @@ export default function DescubrirPage() {
                   style={{ backgroundImage: `url(${modulo.image})` }}
                 ></div>
                 
-                {/* Degradado oscuro para que el texto se lea */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
 
                 <div className="absolute inset-0 p-5 flex flex-col justify-end z-10">
@@ -144,6 +125,59 @@ export default function DescubrirPage() {
           })}
         </div>
       </main>
+
+      {showHelp && (
+        <div className="fixed inset-0 z-50 bg-[#0b1120]/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
+          <div className="bg-[#151b2e] border border-violet-500/30 rounded-[2rem] p-6 w-full max-w-sm relative shadow-[0_0_40px_rgba(139,92,246,0.15)]">
+            <button onClick={() => setShowHelp(false)} className="absolute top-5 right-5 text-slate-400 hover:text-white bg-white/5 p-1.5 rounded-full transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex flex-col items-center text-center mb-6 border-b border-white/5 pb-6 pt-2">
+              <div className="w-16 h-16 bg-violet-500/10 border border-violet-500/30 rounded-2xl flex items-center justify-center text-violet-400 mb-4">
+                <HelpCircle className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-black text-white mb-1">Descubrir, explicado</h3>
+              <p className="text-xs text-slate-400">Cómo se desbloquea cada módulo</p>
+            </div>
+
+            <div className="space-y-5 text-sm">
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 bg-emerald-500/20 p-2 rounded-xl text-emerald-400"><MapPin className="w-4 h-4" /></div>
+                <div>
+                  <h4 className="text-white font-bold mb-0.5">Places (Nivel 2)</h4>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Lugares reales cerca de ti, con recomendaciones y la opción de agregarlos directo a tus Tareas.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 bg-cyan-500/20 p-2 rounded-xl text-cyan-400"><Gamepad2 className="w-4 h-4" /></div>
+                <div>
+                  <h4 className="text-white font-bold mb-0.5">Arcade (Nivel 3)</h4>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Juegos donde apuestas tus Coins (tu cartera gastable) contra Todú — ganar la duplica, perder la vacía, pero tu Nivel nunca se ve afectado.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 bg-rose-500/20 p-2 rounded-xl text-rose-400"><Lock className="w-4 h-4" /></div>
+                <div>
+                  <h4 className="text-white font-bold mb-0.5">¿Por qué está bloqueado?</h4>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Cada módulo pide un Nivel mínimo. ¡Completa tareas para ganar XP real y subir de Nivel!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={() => setShowHelp(false)} className="w-full mt-8 py-3.5 bg-violet-600 hover:bg-violet-500 text-white font-black rounded-2xl transition-colors text-sm tracking-wider uppercase shadow-[0_0_15px_rgba(139,92,246,0.3)]">
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

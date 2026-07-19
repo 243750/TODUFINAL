@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { HelpCircle, Plus, Camera, X, CheckCircle2, Menu } from 'lucide-react';
+import { HelpCircle, Plus, Camera, X, CheckCircle2, Menu, Coins } from 'lucide-react';
 import ToduAvatar from '../../../components/ToduAvatar';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -84,7 +84,6 @@ export default function TareasPage() {
             <div className="absolute top-1/2 -right-6 w-2 h-2 bg-violet-300 rounded-full blur-[1px] animate-bounce pointer-events-none" style={{ animationDelay: '0.5s' }}></div>
             <div className="absolute -bottom-2 -left-2 w-2.5 h-2.5 bg-rose-400 rounded-full blur-[1px] animate-bounce pointer-events-none" style={{ animationDelay: '0.8s' }}></div>
             
-            {/* ENVOLTORIO CLICKEABLE CON z-10 PARA RECIBIR EL CLICK */}
             <div 
               className="absolute inset-0 z-10 flex items-center justify-center overflow-visible cursor-pointer active:scale-95 transition-transform"
               onClick={hacerCosquillas}
@@ -166,7 +165,7 @@ export default function TareasPage() {
 
       {showHelp && (
         <div className="fixed inset-0 z-50 bg-[#150f27]/95 backdrop-blur-md flex flex-col items-center justify-center p-6">
-          <div className="bg-[#1f1638] border border-violet-500/30 rounded-[2rem] p-6 w-full max-w-sm relative shadow-[0_0_40px_rgba(139,92,246,0.15)]">
+          <div className="bg-[#1f1638] border border-violet-500/30 rounded-[2rem] p-6 w-full max-w-sm relative shadow-[0_0_40px_rgba(139,92,246,0.15)] max-h-[85vh] overflow-y-auto">
             <button onClick={() => setShowHelp(false)} className="absolute top-5 right-5 text-slate-400 hover:text-white bg-white/5 p-1.5 rounded-full transition-colors">
               <X className="w-5 h-5" />
             </button>
@@ -197,6 +196,13 @@ export default function TareasPage() {
                 <div>
                   <h4 className="text-white font-bold mb-0.5">Gana Experiencia</h4>
                   <p className="text-slate-400 text-xs leading-relaxed">Las tareas verificadas te otorgan XP. Úsala para evolucionar a Todú y desbloquear minijuegos.</p>
+                </div>
+              </div>
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 bg-amber-500/20 p-2 rounded-xl text-amber-400"><Coins className="w-4 h-4" /></div>
+                <div>
+                  <h4 className="text-white font-bold mb-0.5">Y también ganas Coins</h4>
+                  <p className="text-slate-400 text-xs leading-relaxed">Cada tarea también llena tu cartera de Coins — una moneda aparte de tu XP, que puedes gastar apostando en el Arcade o comprando accesorios para Todú. A diferencia del XP (que nunca baja), los Coins sí se gastan.</p>
                 </div>
               </div>
             </div>
