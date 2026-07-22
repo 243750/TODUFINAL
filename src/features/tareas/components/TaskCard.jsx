@@ -1,8 +1,8 @@
 'use client';
-import { CheckCircle2, Clock, Pencil, Trash2, Camera, Repeat, Bell } from 'lucide-react';
+import { CheckCircle2, Clock, Pencil, Trash2, Camera, Repeat, Bell, MapPin } from 'lucide-react';
 import { DIAS_SEMANA } from '../constants';
 
-export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
+export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia, ocultarEvidencia = false }) {
   const isVencida = tarea.estado === 'vencida' || tarea.estado === 'expired';
   const isCompletada = tarea.estado === 'completed';
   const esFija = tarea.tipo === 'fija';
@@ -25,10 +25,30 @@ export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
     return `${hora.toString().padStart(2, '0')}:${m} ${ampm}`;
   };
 
+// URL universal de Google Maps — abre la app en móvil o la web en
+  // escritorio, sin necesitar nada especial de nuestro lado.
+  // Con `query_place_id` (el placeId real de Google que ya guardamos),
+  // Maps abre la ficha completa del lugar — nombre, reseñas, horario,
+  // y el botón nativo de "Cómo llegar" — en vez de solo un pin suelto
+  // con coordenadas. Si por algo no hay placeId, cae a buscar por
+  // nombre/dirección, y si tampoco hay eso, por coordenadas.
+  const construirUrlMaps = (lugar) => {
+    if (!lugar) return null;
+    const texto = lugar.nombre || lugar.direccion || (lugar.lat != null && lugar.lng != null ? `${lugar.lat},${lugar.lng}` : null);
+    if (!texto) return null;
+    let url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(texto)}`;
+    if (lugar.placeId) url += `&query_place_id=${encodeURIComponent(lugar.placeId)}`;
+    return url;
+  };
+  const urlMaps = construirUrlMaps(tarea.lugar);
+
   return (
     <div className={`bg-[#1f1638] border border-white/5 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-lg ${isVencida ? 'border-l-4 border-l-rose-500' : ''}`}>
       <div className="flex flex-col gap-1.5 min-w-0">
-        <h3 className={`text-base font-bold truncate ${isCompletada ? 'text-slate-500 line-through' : 'text-white'}`}>
+        <h3
+          title={tarea.titulo}
+          className={`text-base font-bold leading-snug line-clamp-3 ${isCompletada ? 'text-slate-500 line-through' : 'text-white'}`}
+        >
           {tarea.titulo}
         </h3>
         {esFija && (
@@ -43,6 +63,11 @@ export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
                 {formato12Horas(tarea.horaRecordatorio)}
               </span>
             )}
+            {tarea.aplicaHoy === false && (
+              <span className="bg-white/5 border border-white/10 text-slate-500 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                Hoy no te toca
+              </span>
+            )}
           </div>
         )}
         <div className={`flex items-center gap-1.5 ${isVencida ? 'text-rose-400' : 'text-slate-400'}`}>
@@ -54,6 +79,12 @@ export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
             }
           </span>
         </div>
+        {urlMaps && (
+          <a href={urlMaps} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 self-start text-[10px] font-bold text-violet-300 hover:text-violet-200 transition-colors">
+            <MapPin className="w-3 h-3" />
+            Ver en Maps
+          </a>
+        )}
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
         <button onClick={() => onEdit(tarea)} className="w-9 h-9 rounded-xl bg-white/5 text-slate-400 border border-white/10 flex items-center justify-center hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-colors">
@@ -62,7 +93,7 @@ export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
         <button onClick={() => onDelete(tarea)} className="w-9 h-9 rounded-xl bg-white/5 text-slate-400 border border-white/10 flex items-center justify-center hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-colors">
           <Trash2 className="w-4 h-4" />
         </button>
-        {!isCompletada && (
+        {!isCompletada && !ocultarEvidencia && (
           <button onClick={() => onEvidencia(tarea)} className="w-12 h-12 rounded-[1.2rem] bg-violet-500/10 text-violet-400 border border-violet-500/20 flex items-center justify-center hover:bg-violet-500 hover:text-white transition-colors">
             <Camera className="w-5 h-5" />
           </button>

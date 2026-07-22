@@ -86,9 +86,9 @@ export default function EscenaCuartoTodu({ compradas, emocionActual, mensaje, on
         </div>
       ))}
 
-      <div className="absolute left-1/2 -translate-x-1/2 top-16 w-64 h-3 rounded-full bg-[#3a2b5c] shadow-[0_4px_10px_rgba(0,0,0,0.4)]">
-        <div className="absolute -bottom-1.5 left-3 w-1 h-2 bg-[#2a1f47] rounded-b-sm" />
-        <div className="absolute -bottom-1.5 right-3 w-1 h-2 bg-[#2a1f47] rounded-b-sm" />
+      <div className="absolute left-1/2 -translate-x-1/2 top-16 w-64 h-3 rounded-full bg-gradient-to-b from-[#a97a52] via-[#8b5e3c] to-[#5c3719] shadow-[0_4px_10px_rgba(0,0,0,0.4)]">
+        <div className="absolute -bottom-1.5 left-3 w-1 h-2 bg-[#3d2412] rounded-b-sm" />
+        <div className="absolute -bottom-1.5 right-3 w-1 h-2 bg-[#3d2412] rounded-b-sm" />
       </div>
       {trofeos.map((item, i) => (
         <div
@@ -142,9 +142,9 @@ export default function EscenaCuartoTodu({ compradas, emocionActual, mensaje, on
       )}
 
       {accesorios.length > 0 && (
-        <div className="absolute bottom-14 right-4 w-16 h-10 bg-[#3a2b5c] rounded-t-md shadow-[0_4px_10px_rgba(0,0,0,0.4)]">
-          <div className="absolute -bottom-3 left-1 w-1.5 h-3 bg-[#2a1f47]" />
-          <div className="absolute -bottom-3 right-1 w-1.5 h-3 bg-[#2a1f47]" />
+        <div className="absolute bottom-14 right-4 w-16 h-10 bg-gradient-to-b from-[#a97a52] via-[#8b5e3c] to-[#5c3719] rounded-t-md shadow-[0_4px_10px_rgba(0,0,0,0.4)]">
+          <div className="absolute -bottom-3 left-1 w-1.5 h-3 bg-[#3d2412]" />
+          <div className="absolute -bottom-3 right-1 w-1.5 h-3 bg-[#3d2412]" />
           <div className="absolute -top-8 left-0 flex gap-1">
             {accesorios.map((item) => (
               <div key={item.id} className="w-8 h-8" title={item.nombre}>

@@ -46,7 +46,7 @@ function SidebarContent({ onNavigate }) {
   const handleLogout = () => {
     logout();
     onNavigate?.();
-    router.push('/login');
+    router.push('/');
   };
 
   const ActiveAvatarIcon = AVATAR_MAP[avatarKey] || User;

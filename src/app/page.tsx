@@ -118,7 +118,7 @@ export default function WelcomePage() {
             />
           </div>
 
-          <Link href="/registro" className="block w-full">
+          <Link href="/login" className="block w-full">
             <button className="w-full flex items-center justify-center gap-3 bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm py-3.5 px-4 rounded-xl shadow-[0_0_20px_rgba(139,92,246,0.3)] transition duration-200">
               <Mail size={18} />
               Continuar con correo
@@ -126,9 +126,9 @@ export default function WelcomePage() {
           </Link>
         </div>
         <div className="text-xs font-medium text-slate-400 tracking-wide pb-2">
-          ¿Ya tienes una cuenta?{' '}
-          <Link href="/login" className="text-violet-400 font-bold hover:underline transition">
-            Iniciar sesión
+          ¿No tienes cuenta?{' '}
+          <Link href="/registro" className="text-violet-400 font-bold hover:underline transition">
+            Únete
           </Link>
         </div>
       </div>

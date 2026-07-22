@@ -334,9 +334,8 @@ export default function AjustesPage() {
                 Aquí puedes cambiar tu nombre de usuario, actualizar tu contraseña, cerrar sesión
                 en este dispositivo, o eliminar tu cuenta de forma permanente.
               </p>
-              <p className="text-slate-400 text-xs">
-                Por ahora el correo electrónico no se puede editar — puedes cambiarlo escribiéndonos
-                si lo necesitas.
+              <p>
+                En <span className="text-white font-bold">Mi Avatar</span> puedes elegir entre 20 personajes — caras y criaturas de colores — para que te representen en el Sidebar y en tu perfil.
               </p>
             </div>
             <button

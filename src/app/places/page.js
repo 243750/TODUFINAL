@@ -4,13 +4,26 @@ import Link from 'next/link';
 import { Plus, Check, X, MapPin, RefreshCw, AlertCircle, ExternalLink } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
 
-const CATEGORIES = ['Todos', 'Cafeterías', 'Bibliotecas', 'Parques', 'Para comer', 'Otros'];
+const CATEGORIES = ['Todos', 'Cafeterías', 'Bibliotecas', 'Parques', 'Para comer', 'Bares'];
+
+// El backend (GeoService.buscarCercanos) ya acepta `type` para restringir
+// la búsqueda de Google Places — antes el front nunca lo mandaba, así
+// que traía de todo sin filtrar (bancos, tiendas, hasta municipios
+// enteros).
+const TYPE_POR_CATEGORIA = {
+  'Cafeterías': 'cafe',
+  'Bibliotecas': 'library',
+  Parques: 'park',
+  'Para comer': 'restaurant',
+  Bares: 'bar',
+};
 
 const IMAGEN_POR_CATEGORIA = {
   'Cafeterías': 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=600&q=80',
   'Bibliotecas': 'https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=600&q=80',
   'Parques': 'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?auto=format&fit=crop&w=600&q=80',
   'Para comer': 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80',
+  'Bares': 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&w=600&q=80',
   'Otros': 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&w=600&q=80',
 };
 
@@ -18,6 +31,7 @@ function inferirCategoria(types = []) {
   if (types.includes('cafe')) return 'Cafeterías';
   if (types.includes('library')) return 'Bibliotecas';
   if (types.includes('park')) return 'Parques';
+  if (types.includes('bar') || types.includes('night_club')) return 'Bares';
   if (types.some((t) => ['restaurant', 'meal_takeaway', 'food', 'bakery'].includes(t))) return 'Para comer';
   return 'Otros';
 }
@@ -79,51 +93,119 @@ export default function PlacesPage() {
     setCargandoPlaces(true);
     setErrorPlaces(null);
 
-    api
-      .get(`/geo/cercanos?lat=${ubicacion.lat}&lng=${ubicacion.lng}&radius=3000`)
-      .then((data) => {
-        if (cancelled) return;
-        const mapeados = (data.places || []).map((p) => ({
-          id: p.id,
-          name: p.name,
-          rating: p.rating,
-          reviews: p.userRatingsTotal || 0,
-          category: inferirCategoria(p.types),
-          distanciaKm: calcularDistanciaKm(ubicacion.lat, ubicacion.lng, p.geometry?.lat, p.geometry?.lng),
-          isOpen: p.openNow,
-          address: p.address,
-          lat: p.geometry?.lat,
-          lng: p.geometry?.lng,
-          imageUrl: IMAGEN_POR_CATEGORIA[inferirCategoria(p.types)],
-          toduTip: p.tip || 'Todú todavía no tiene un tip para este lugar, pero seguro vale la pena.',
-        }));
-        setPlaces(mapeados);
-      })
-      .catch((err) => {
+    const construirUrl = (type) => {
+      let url = `/geo/cercanos?lat=${ubicacion.lat}&lng=${ubicacion.lng}&radius=3000`;
+      if (type) url += `&type=${type}`;
+      return url;
+    };
+
+    const mapear = (p) => {
+      const categoria = inferirCategoria(p.types);
+      return {
+        id: p.id,
+        name: p.name,
+        rating: p.rating,
+        reviews: p.userRatingsTotal || 0,
+        category: categoria,
+        distanciaKm: calcularDistanciaKm(ubicacion.lat, ubicacion.lng, p.geometry?.lat, p.geometry?.lng),
+        isOpen: p.openNow,
+        address: p.address,
+        lat: p.geometry?.lat,
+        lng: p.geometry?.lng,
+        // Cuando el backend mande una foto real (p.photoUrl), se usa
+        // sola aquí sin tocar nada más — mientras tanto cae en el
+        // stock genérico por categoría.
+        imageUrl: p.photoUrl || IMAGEN_POR_CATEGORIA[categoria],
+        toduTip: p.tip || 'Todú todavía no tiene un tip para este lugar, pero seguro vale la pena.',
+      };
+    };
+
+    const cargar = async () => {
+      try {
+        let resultadosCrudos;
+        if (activeCategory === 'Todos') {
+          // Google solo acepta un `type` por búsqueda — para "Todos"
+          // se combinan en paralelo las 4 categorías con type conocido
+          // y se quitan duplicados por id.
+          const tipos = Object.values(TYPE_POR_CATEGORIA);
+          const respuestas = await Promise.all(tipos.map((t) => api.get(construirUrl(t))));
+          const vistos = new Set();
+          resultadosCrudos = [];
+          for (const data of respuestas) {
+            for (const p of data.places || []) {
+              if (vistos.has(p.id)) continue;
+              vistos.add(p.id);
+              resultadosCrudos.push(p);
+            }
+          }
+        } else {
+          const tipo = TYPE_POR_CATEGORIA[activeCategory]; // undefined para "Otros" (a propósito)
+          const data = await api.get(construirUrl(tipo));
+          resultadosCrudos = data.places || [];
+        }
+        if (!cancelled) setPlaces(resultadosCrudos.map(mapear));
+      } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 403) {
           setErrorPlaces('Necesitas subir de nivel para desbloquear Places.');
         } else {
           setErrorPlaces(err.message || 'No se pudieron cargar los lugares cercanos.');
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setCargandoPlaces(false);
-      });
+      }
+    };
+
+    cargar();
 
     return () => {
       cancelled = true;
     };
-  }, [ubicacion]);
+  }, [ubicacion, activeCategory]);
+
+  // Nombres de lugares reales pueden ser muy largos ("Compartamos Banco
+  // Especialista en Microfinanzas") y se veían cortados feo en las
+  // tarjetas de Tareas (más angostas que las de Places). Se recorta el
+  // nombre del lugar, no el prefijo.
+  const construirTituloTarea = (nombre) => {
+    const max = 26;
+    const recortado = nombre.length > max ? `${nombre.slice(0, max - 1).trimEnd()}…` : nombre;
+    return `Visitar ${recortado}`;
+  };
+
+  // `descripcion` en una tarea normal SOLO debe ser la hora — TaskCard.jsx
+  // la parsea esperando exactamente eso (igual que el horario que arma
+  // TareaFormModal). Antes aquí se mezclaba con la dirección
+  // ("dirección · 16:00 hrs"), lo que rompía el parseo y siempre
+  // mostraba "12:00 AM" sin importar la hora real elegida.
+  const formatearHora12 = (hora24) => {
+    const [hStr, mStr] = hora24.split(':');
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`;
+  };
 
   const handleAgregarComoTarea = async (place) => {
     setSavingId(place.id);
     setErrorMsg(null);
     try {
       await api.post('/tareas', {
-        titulo: `Visitar ${place.name}`,
-        descripcion: `${place.address} · ${hora} hrs`,
+        titulo: construirTituloTarea(place.name),
+        descripcion: formatearHora12(hora),
         xpValor: 25,
+        // El backend ya soporta guardar la ubicación completa de la
+        // tarea (migración 004_tareas_con_lugar.sql) — con esto
+        // TaskCard.jsx puede mostrar un botón "Ver en Maps" real,
+        // y de paso recuperamos la dirección sin volver a mezclarla
+        // dentro de `descripcion` (que debe ser solo la hora).
+        lugar: {
+          nombre: place.name.slice(0, 120),
+          direccion: place.address ? place.address.slice(0, 500) : undefined,
+          placeId: place.id,
+          lat: place.lat,
+          lng: place.lng,
+        },
       });
       setSavedIds((prev) => [...prev, place.id]);
       setOpenFormId(null);
@@ -276,12 +358,7 @@ export default function PlacesPage() {
                               src={`https://maps.google.com/maps?q=${place.lat},${place.lng}&z=15&output=embed`}
                             />
                           </div>
-                            <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-1.5 text-center py-2 text-[11px] font-bold text-violet-300 hover:text-violet-200 bg-black/30"
-                          >
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 text-center py-2 text-[11px] font-bold text-violet-300 hover:text-violet-200 bg-black/30">
                             Abrir en Google Maps
                             <ExternalLink className="w-3 h-3" />
                           </a>

@@ -24,7 +24,7 @@ export default function MiniToduHelper() {
 
         <h4 className="text-[#FFD700] font-bold text-sm mb-1">Tip de Todú</h4>
         <p className="text-sm text-slate-200 leading-relaxed">
-          ¡Hola! Aquí puedes ver tu progreso. Completa las tareas de tu panel principal para ganar XP y desbloquear nuevos accesorios para mí. 🚀
+          ¡Hola! Aquí puedes ver tu progreso. Completa las tareas de tu panel principal para ganar XP y desbloquear nuevos accesorios para mí.
         </p>
       </div>
     </div>

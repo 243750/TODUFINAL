@@ -58,9 +58,9 @@ const { progreso, refrescar: refrescarGamificacion } = useGamificacion();
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cuarto de Todú</h3>
             <button
               onClick={() => setShowTienda(true)}
-              className="flex items-center gap-1.5 text-[10px] font-bold text-violet-300 bg-violet-500/10 border border-violet-500/20 px-3 py-1.5 rounded-full hover:bg-violet-500/20 transition-colors"
+              className="flex items-center gap-2 text-xs font-black text-white uppercase tracking-wider bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-2.5 rounded-2xl shadow-[0_0_20px_rgba(139,92,246,0.4)] hover:scale-105 active:scale-95 transition-all"
             >
-              <ShoppingBag className="w-3 h-3" /> Tienda
+              <ShoppingBag className="w-4 h-4" /> Tienda
             </button>
           </div>
           <EscenaCuartoTodu
@@ -167,12 +167,21 @@ const { progreso, refrescar: refrescarGamificacion } = useGamificacion();
                 </div>
               </div>
 
-              <div className="flex gap-4 items-start">
+<div className="flex gap-4 items-start">
                 <div className="mt-1 bg-orange-500/20 p-2 rounded-xl text-orange-400"><Flame className="w-4 h-4" /></div>
                 <div>
                   <h4 className="text-white font-bold mb-0.5">Racha</h4>
                   <p className="text-slate-400 text-xs leading-relaxed">
                     Días seguidos completando al menos una tarea. Se pone naranja (1-2 días), verde (3-6 días), o morada brillante (7+ días) — entre más larga, más bono de XP recibes por cada tarea.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-4 items-start">
+                <div className="mt-1 bg-fuchsia-500/20 p-2 rounded-xl text-fuchsia-400"><ShoppingBag className="w-4 h-4" /></div>
+                <div>
+                  <h4 className="text-white font-bold mb-0.5">Cuarto de Todú y Tienda</h4>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Usa tus Coins en la <span className="text-white font-bold">Tienda</span> para comprar trofeos, mascotas, cuadros y más — cada cosa que compras aparece sola en el cuarto, sin que tengas que acomodarla.
                   </p>
                 </div>
               </div>

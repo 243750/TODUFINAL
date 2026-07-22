@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { HelpCircle, Plus, Camera, X, CheckCircle2, Menu, Coins } from 'lucide-react';
+import { HelpCircle, Plus, Camera, X, CheckCircle2, Menu, Coins, Repeat, MapPin } from 'lucide-react';
 import ToduAvatar from '../../../components/ToduAvatar';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -66,6 +66,12 @@ export default function TareasPage() {
 
   const tareasFijasHoy = tareas.filter((t) => t.tipo === 'fija' && t.aplicaHoy !== false);
   const tareasNormales = tareas.filter((t) => t.tipo !== 'fija');
+  // Todas las fijas sin importar si aplican hoy — sin esto, una fija
+  // programada para días futuros queda invisible: no sale en "Hoy"
+  // (no le toca) ni en "Historial" (nunca ha pasado por un reset de
+  // medianoche para tener una entrada ahí). Esta lista es la única
+  // forma de verla, editarla o borrarla antes de que le toque su día.
+  const todasLasFijas = tareas.filter((t) => t.tipo === 'fija');
 
   const normalesDeHoy = tareasNormales.filter(
     (t) => fechaLocalISO(t.fechaVencimiento || t.fechaCreacion) === hoyISO
@@ -94,7 +100,7 @@ export default function TareasPage() {
     else historialAgrupado[fechaISO].noCompletadas.push(item);
   }
 
-  const [tab, setTab] = useState('hoy'); // 'hoy' | 'historial'
+  const [tab, setTab] = useState('hoy'); // 'hoy' | 'historial' | 'fijas'
 
   const { refrescar: refrescarGamificacion } = useGamificacion();
   const [avatarSize, setAvatarSize] = useState(170);
@@ -178,6 +184,14 @@ export default function TareasPage() {
             >
               Historial
             </button>
+            <button
+              onClick={() => setTab('fijas')}
+              className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full transition-colors ${
+                tab === 'fijas' ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              Fijas
+            </button>
           </div>
 
           {loadingTareas && <p className="text-sm text-slate-500 text-center py-8">Cargando tus tareas...</p>}
@@ -213,6 +227,27 @@ export default function TareasPage() {
 
           {!loadingTareas && !errorTareas && tab === 'historial' && (
             <HistorialTareas historial={historialAgrupado} />
+          )}
+
+          {!loadingTareas && !errorTareas && tab === 'fijas' && (
+            <>
+              {todasLasFijas.length === 0 && (
+                <p className="text-sm text-slate-500 text-center py-8">
+                  Aún no tienes tareas fijas. Créalas desde el botón <span className="text-violet-400 font-bold">(+)</span> activando "Tarea diaria".
+                </p>
+              )}
+              <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-4">
+                {todasLasFijas.map((tarea) => (
+                  <TaskCard
+                    key={tarea.id}
+                    tarea={tarea}
+                    onEdit={(t) => setTareaEditando(t)}
+                    onDelete={handleDelete}
+                    ocultarEvidencia
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </main>
