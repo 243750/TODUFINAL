@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
-  Menu, Lock, Trash2, LogOut, HelpCircle, X, ShieldCheck, User
+  Menu, Lock, Trash2, LogOut, HelpCircle, X, ShieldCheck, User, Bell
 } from 'lucide-react';
 import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -10,6 +10,7 @@ import { ROUTES } from '../../../lib/routes';
 import usePerfil from '../../../features/perfil/hooks/usePerfil';
 import Card from '../../../features/perfil/components/Card';
 import { AVATAR_MAP, AVATARES_KEYS } from '../../../lib/avatarOptions';
+import useNotificacionesPush from '../../../features/notificaciones/hooks/useNotificacionesPush';
 
 const inputClass =
   'w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-violet-500/50 transition-colors disabled:opacity-40';
@@ -61,6 +62,16 @@ export default function AjustesPage() {
 
   const [avatarActivo, setAvatarActivo] = useState('ana');
 
+  const {
+    soportado: pushSoportado,
+    permiso: pushPermiso,
+    suscrito: pushSuscrito,
+    cargando: pushCargando,
+    error: pushError,
+    activar: activarPush,
+    desactivar: desactivarPush,
+  } = useNotificacionesPush();
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setAvatarActivo(localStorage.getItem('todu_avatar') || 'ana');
@@ -106,7 +117,8 @@ export default function AjustesPage() {
       <main className="max-w-md lg:max-w-3xl mx-auto px-6 pt-2 lg:pt-6 flex flex-col gap-5">
         <div className="flex items-center gap-4 bg-[#1f1638] border border-white/5 rounded-3xl p-5">
           <div className="w-16 h-16 rounded-2xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden">
-            <ActiveAvatarIcon className="w-14 h-14" />          </div>
+            <ActiveAvatarIcon className="w-14 h-14" />
+          </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-white truncate">{user?.username || 'Invitado'}</p>
             <p className="text-xs text-slate-500 truncate">{user?.email}</p>
@@ -123,7 +135,8 @@ export default function AjustesPage() {
                   key={avKey}
                   type="button"
                   onClick={() => handleSelectAvatar(avKey)}
-                  className={`w-16 h-16 flex items-center justify-center rounded-2xl transition-all overflow-hidden ${                    avatarActivo === avKey 
+                  className={`w-16 h-16 flex items-center justify-center rounded-2xl transition-all overflow-hidden ${
+                    avatarActivo === avKey 
                       ? 'bg-violet-500/30 border-2 border-violet-400 scale-110 shadow-[0_0_15px_rgba(139,92,246,0.5)] text-violet-300' 
                       : 'bg-black/30 border border-white/5 hover:bg-white/10 hover:scale-105 text-slate-400'
                   }`}
@@ -133,6 +146,44 @@ export default function AjustesPage() {
               );
             })}
           </div>
+        </Card>
+
+        <Card icon={Bell} title="Notificaciones">
+          <p className="text-xs text-slate-400 mb-4">
+            Recibe un aviso 10 minutos antes de que venza una tarea, y a la hora de recordatorio de tus tareas fijas — directo a tu dispositivo, aunque tengas la pestaña cerrada.
+          </p>
+          {!pushSoportado ? (
+            <p className="text-xs text-slate-500">
+              Tu navegador no soporta notificaciones push, o todavía no está configurada la llave del servidor.
+            </p>
+          ) : pushPermiso === 'denied' ? (
+            <p className="text-xs text-rose-400">
+              Bloqueaste las notificaciones para este sitio — actívalas desde los ajustes de tu navegador para poder usarlas aquí.
+            </p>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => (pushSuscrito ? desactivarPush() : activarPush())}
+                disabled={pushCargando}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors disabled:opacity-50 ${
+                  pushSuscrito ? 'bg-violet-500/10 border-violet-500/40' : 'bg-black/20 border-white/10'
+                }`}
+              >
+                <span className={`text-sm font-bold ${pushSuscrito ? 'text-violet-300' : 'text-slate-400'}`}>
+                  {pushCargando ? 'Un momento...' : pushSuscrito ? 'Notificaciones activadas' : 'Activar notificaciones'}
+                </span>
+                <span
+                  className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${pushSuscrito ? 'bg-violet-500' : 'bg-white/10'}`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${pushSuscrito ? 'translate-x-5' : 'translate-x-0'}`}
+                  />
+                </span>
+              </button>
+              {pushError && <p className="text-xs text-rose-400 font-semibold mt-2">{pushError}</p>}
+            </>
+          )}
         </Card>
 
         <Card icon={User} title="Información de perfil">
@@ -253,7 +304,7 @@ export default function AjustesPage() {
             <button
               onClick={() => {
                 logout();
-                router.push(ROUTES.login);
+                router.push(ROUTES.home);
               }}
               className="w-full flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 text-slate-300 font-bold rounded-xl text-sm transition-colors"
             >
@@ -336,6 +387,10 @@ export default function AjustesPage() {
               </p>
               <p>
                 En <span className="text-white font-bold">Mi Avatar</span> puedes elegir entre 20 personajes — caras y criaturas de colores — para que te representen en el Sidebar y en tu perfil.
+              </p>
+              <p className="text-slate-400 text-xs">
+                Por ahora el correo electrónico no se puede editar — puedes cambiarlo escribiéndonos
+                si lo necesitas.
               </p>
             </div>
             <button

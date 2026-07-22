@@ -59,6 +59,23 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
     return `${h.toString().padStart(2, '0')}:${mStr} ${ampm}`;
   };
 
+  // Construye la fecha/hora real de vencimiento (hoy, a la hora elegida)
+  // en formato ISO — el cron del backend (`findPorVencerEn`) EXIGE que
+  // `fecha_vencimiento` no sea nulo para mandar el push de "10 minutos
+  // antes". Antes solo mandábamos `descripcion` como texto para mostrar
+  // en pantalla, así que esa columna se quedaba vacía siempre y el push
+  // nunca se disparaba, aunque el aviso visual (client-side) sí
+  // funcionara. `.toISOString()` ya normaliza a UTC solo, sin el
+  // problema de zona horaria que tuvimos con `aplicaHoy` (aquí es una
+  // marca de tiempo absoluta comparada con NOW(), no una clasificación
+  // de "qué día es hoy").
+  const construirFechaVencimiento = (hora24) => {
+    const [hStr, mStr] = hora24.split(':');
+    const fecha = new Date();
+    fecha.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+    return fecha.toISOString();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!titulo.trim()) return;
@@ -82,6 +99,7 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
       // no intenta calcularle un vencimiento que no existe.
       if (!esFija) {
         payload.descripcion = formatearHoraParaBackend(horaNativa);
+        payload.fechaVencimiento = construirFechaVencimiento(horaNativa);
       } else {
         // Solo se manda si el usuario eligió días específicos; si dejó
         // todos sin marcar, se omite y el backend la aplica todos los días.
