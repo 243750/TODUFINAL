@@ -1,58 +1,12 @@
 'use client';
-import { useEffect, useReducer, useCallback } from 'react';
-import { api } from '../../../lib/api';
-import { useAuth } from '../../../context/AuthContext';
+import { useGamificacionContext } from '../../../context/GamificacionContext';
 
-// Solo se usa cuando NO hay sesión (preview de la UI sin backend).
-// Si hay usuario logueado, nunca se muestra este valor: se espera al fetch real.
-const PROGRESO_PREVIEW = {
-  nivel: 5,
-  xpActual: 150,
-  xpSiguienteNivel: 300,
-  progresoPorcentaje: 50,
-  rachaActual: 0,
-};
-
-const initialState = { progreso: null, loading: true, error: null };
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'FETCH_START':   return { ...state, loading: true, error: null };
-    case 'FETCH_SUCCESS': return { progreso: action.payload, loading: false, error: null };
-    case 'FETCH_ERROR':   return { ...state, loading: false, error: action.payload };
-    default:              return state;
-  }
-}
-
+// El estado real ahora vive en <GamificacionProvider> (ver
+// src/context/GamificacionContext.jsx) — este archivo se deja como un
+// simple puente para NO tener que tocar los imports que ya existen en
+// Sidebar.jsx, tareas/page.js, mi-todu/page.js, descubrir/page.js,
+// useDadosGame.js y useDecoraciones.js. Todos siguen llamando
+// useGamificacion() exactamente igual que antes.
 export default function useGamificacion() {
-  const { user } = useAuth();
-  const [state, dispatch] = useReducer(reducer, initialState);
-
-  const cargar = useCallback(() => {
-    if (!user?.id) {
-      dispatch({ type: 'FETCH_SUCCESS', payload: PROGRESO_PREVIEW });
-      return;
-    }
-    dispatch({ type: 'FETCH_START' });
-    api.get(`/xp/progreso/${user.id}`, { auth: false })
-      .then((data) => dispatch({ type: 'FETCH_SUCCESS', payload: data }))
-      .catch((err) => dispatch({ type: 'FETCH_ERROR', payload: err.message }));
-  }, [user]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!user?.id) {
-      dispatch({ type: 'FETCH_SUCCESS', payload: PROGRESO_PREVIEW });
-      return;
-    }
-    dispatch({ type: 'FETCH_START' });
-    api.get(`/xp/progreso/${user.id}`, { auth: false })
-      .then((data) => { if (!cancelled) dispatch({ type: 'FETCH_SUCCESS', payload: data }); })
-      .catch((err) => { if (!cancelled) dispatch({ type: 'FETCH_ERROR', payload: err.message }); });
-    return () => { cancelled = true; };
-  }, [user]);
-
-  // Para llamar después de completar una tarea o jugar Farkle — sin esto,
-  // el XP/cartera se quedaba desactualizado hasta recargar la página.
-  return { ...state, refrescar: cargar };
+  return useGamificacionContext();
 }

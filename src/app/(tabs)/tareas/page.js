@@ -6,10 +6,12 @@ import { useSidebar } from '../../../context/SidebarContext';
 import { useAuth } from '../../../context/AuthContext';
 import AnimatedButton from '../../../components/ui/animated-button';
 import useTareas from '../../../features/tareas/hooks/useTareas';
+import useHistorialFijas from '../../../features/tareas/hooks/useHistorialFijas';
 import useRobotState from '../../../features/robot/hooks/useRobotState';
 import TaskCard from '../../../features/tareas/components/TaskCard';
 import TareaFormModal from '../../../features/tareas/components/TareaFormModal';
 import EvidenciaModal from '../../../features/tareas/components/EvidenciaModal';
+import HistorialTareas from '../../../features/tareas/components/HistorialTareas';
 import useGamificacion from '../../../features/gamificacion/hooks/useGamificacion';
 
 export default function TareasPage() {
@@ -32,6 +34,67 @@ export default function TareasPage() {
 
   const robotState = useRobotState('tareas', tareas); 
   const { emocionActual, mensaje, tareaCompletada, hacerCosquillas } = robotState;
+
+  // El backend ya calcula si una tarea fija aplica hoy según sus
+  // `diasSemana` (las tareas normales siempre traen aplicaHoy: true).
+  // Si el campo no viniera por alguna razón, no se oculta nada por
+  // un dato faltante.
+  //
+  // "Tareas de Hoy" = fijas que aplican hoy + normales cuyo día (según
+  // fechaVencimiento, o fechaCreacion si no la tiene) es HOY. Las
+  // normales de días anteriores (completadas o vencidas) se van al
+  // Historial — nunca se borran, solo cambian de sección. El historial
+  // de fijas viene aparte, de GET /tareas/historial-fijas (Manuel lo
+  // agregó — se llena cada noche a las 00:05, justo antes de resetear
+  // el estado diario de las fijas).
+  const fechaLocalISO = (fecha) => {
+    const d = new Date(fecha);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  // Si `fecha` ya viene como "YYYY-MM-DD" puro (típico de un DATE de
+  // Postgres), se usa tal cual — convertirlo con `new Date()` a secas
+  // lo interpreta como medianoche UTC y, al pasarlo a hora local
+  // (México = UTC-6), puede recorrerlo un día hacia atrás.
+  const normalizarFechaHistorial = (fecha) => {
+    if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+    return fechaLocalISO(fecha);
+  };
+  const hoyISO = fechaLocalISO(new Date());
+
+  const { historial: historialFijas } = useHistorialFijas();
+
+  const tareasFijasHoy = tareas.filter((t) => t.tipo === 'fija' && t.aplicaHoy !== false);
+  const tareasNormales = tareas.filter((t) => t.tipo !== 'fija');
+
+  const normalesDeHoy = tareasNormales.filter(
+    (t) => fechaLocalISO(t.fechaVencimiento || t.fechaCreacion) === hoyISO
+  );
+  const normalesHistorial = tareasNormales.filter(
+    (t) => fechaLocalISO(t.fechaVencimiento || t.fechaCreacion) !== hoyISO
+  );
+
+  const tareasDeHoy = [...tareasFijasHoy, ...normalesDeHoy];
+
+  const historialAgrupado = {};
+  for (const t of normalesHistorial) {
+    const fechaISO = fechaLocalISO(t.fechaVencimiento || t.fechaCreacion);
+    if (!historialAgrupado[fechaISO]) historialAgrupado[fechaISO] = { completadas: [], noCompletadas: [] };
+    if (t.estado === 'completed') historialAgrupado[fechaISO].completadas.push(t);
+    else historialAgrupado[fechaISO].noCompletadas.push(t);
+  }
+  // Historial de fijas (GET /tareas/historial-fijas) — cada entrada trae
+  // { tareaId, titulo, fecha, estadoFinal }, sin xpValor (ese endpoint
+  // no lo manda, HistorialTareas.jsx simplemente omite esa parte).
+  for (const h of historialFijas) {
+    const fechaISO = normalizarFechaHistorial(h.fecha);
+    if (!historialAgrupado[fechaISO]) historialAgrupado[fechaISO] = { completadas: [], noCompletadas: [] };
+    const item = { id: `fija-${h.tareaId}-${fechaISO}`, titulo: h.titulo, esFija: true };
+    if (h.estadoFinal === 'completada') historialAgrupado[fechaISO].completadas.push(item);
+    else historialAgrupado[fechaISO].noCompletadas.push(item);
+  }
+
+  const [tab, setTab] = useState('hoy'); // 'hoy' | 'historial'
 
   const { refrescar: refrescarGamificacion } = useGamificacion();
   const [avatarSize, setAvatarSize] = useState(170);
@@ -98,27 +161,59 @@ export default function TareasPage() {
         </section>
 
         <div className="flex-1 w-full flex flex-col gap-4">
-          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Tareas de Hoy</h2>
+          <div className="flex items-center gap-2 mb-1">
+            <button
+              onClick={() => setTab('hoy')}
+              className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full transition-colors ${
+                tab === 'hoy' ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              Hoy
+            </button>
+            <button
+              onClick={() => setTab('historial')}
+              className={`text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full transition-colors ${
+                tab === 'historial' ? 'bg-violet-600 text-white' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              Historial
+            </button>
+          </div>
+
           {loadingTareas && <p className="text-sm text-slate-500 text-center py-8">Cargando tus tareas...</p>}
           {errorTareas && !loadingTareas && (
             <p className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-2xl p-4 text-center">{errorTareas}</p>
           )}
-          {!loadingTareas && !errorTareas && tareas.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-8">
-              Aún no tienes tareas. Toca el botón <span className="text-violet-400 font-bold">(+)</span> para crear la primera.
-            </p>
+
+          {!loadingTareas && !errorTareas && tab === 'hoy' && (
+            <>
+              {tareas.length === 0 && (
+                <p className="text-sm text-slate-500 text-center py-8">
+                  Aún no tienes tareas. Toca el botón <span className="text-violet-400 font-bold">(+)</span> para crear la primera.
+                </p>
+              )}
+              {tareas.length > 0 && tareasDeHoy.length === 0 && (
+                <p className="text-sm text-slate-500 text-center py-8">
+                  Hoy no te toca ninguna tarea fija. ¡Aprovecha para descansar!
+                </p>
+              )}
+              <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-4">
+                {tareasDeHoy.map((tarea) => (
+                  <TaskCard
+                    key={tarea.id}
+                    tarea={tarea}
+                    onEdit={(t) => setTareaEditando(t)}
+                    onDelete={handleDelete}
+                    onEvidencia={(t) => setTareaEvidencia(t)}
+                  />
+                ))}
+              </div>
+            </>
           )}
-          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:gap-4">
-            {tareas.map((tarea) => (
-              <TaskCard
-                key={tarea.id}
-                tarea={tarea}
-                onEdit={(t) => setTareaEditando(t)}
-                onDelete={handleDelete}
-                onEvidencia={(t) => setTareaEvidencia(t)}
-              />
-            ))}
-          </div>
+
+          {!loadingTareas && !errorTareas && tab === 'historial' && (
+            <HistorialTareas historial={historialAgrupado} />
+          )}
         </div>
       </main>
 

@@ -2,6 +2,7 @@ import React from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
+import { GamificacionProvider } from "../context/GamificacionContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,7 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="Todú" />
       </head>
       <body className={inter.className}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <GamificacionProvider>{children}</GamificacionProvider>
+        </AuthProvider>
       </body>
     </html>
   );

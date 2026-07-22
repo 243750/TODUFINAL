@@ -1,29 +1,46 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CATALOGO_DECORACIONES } from '../../../components/decoraciones/catalogo';
+import { api, ApiError } from '../../../lib/api';
 
 export default function useDecoraciones() {
   const [compradas, setCompradas] = useState([]);
   const [colocadas, setColocadas] = useState({});
   const [comprando, setComprando] = useState(null);
   const [error, setError] = useState(null);
+  const [cargandoInventario, setCargandoInventario] = useState(true);
+
+  // Carga el inventario real al montar — antes esto se quedaba siempre
+  // en `[]` local, así que recargar la página "perdía" las compras.
+  useEffect(() => {
+    let cancelled = false;
+    api.get('/tienda/inventario')
+      .then((data) => { if (!cancelled) setCompradas(data.items || []); })
+      .catch((err) => { if (!cancelled) setError(err.message); })
+      .finally(() => { if (!cancelled) setCargandoInventario(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   const yaComprado = useCallback((itemId) => compradas.includes(itemId), [compradas]);
 
-  const comprar = useCallback(async (itemId, precio, xpDisponible, gastarCoins) => {
+  // Llama al backend real de Manuel (POST /tienda/comprar, ya probado
+  // con curl del lado del servidor). Devuelve la respuesta completa
+  // ({ mensaje, itemId, precio, xpDisponible }) para que quien llame
+  // pueda refrescar useGamificacion() con el saldo real, o `null` si
+  // falló (el mensaje de error ya queda en `error`).
+  const comprar = useCallback(async (itemId, precio) => {
     setError(null);
-    if (xpDisponible < precio) {
-      setError('No tienes Coins suficientes para este objeto.');
-      return false;
-    }
     setComprando(itemId);
     try {
-      if (gastarCoins) await gastarCoins(precio);
-      setCompradas((prev) => [...prev, itemId]);
-      return true;
+      const data = await api.post('/tienda/comprar', { itemId });
+      setCompradas((prev) => (prev.includes(itemId) ? prev : [...prev, itemId]));
+      return data;
     } catch (err) {
-      setError(err.message || 'No se pudo completar la compra.');
-      return false;
+      const mensaje = err instanceof ApiError
+        ? err.message
+        : 'No se pudo completar la compra.';
+      setError(mensaje);
+      return null;
     } finally {
       setComprando(null);
     }
@@ -50,6 +67,7 @@ export default function useDecoraciones() {
     colocadas,
     comprando,
     error,
+    cargandoInventario,
     yaComprado,
     comprar,
     colocarEnSlot,

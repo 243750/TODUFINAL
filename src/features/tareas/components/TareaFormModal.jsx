@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { X, Repeat } from 'lucide-react';
-import { DIFICULTADES } from '../constants';
+import { DIFICULTADES, DIAS_SEMANA } from '../constants';
 
 export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTarea, editarTarea }) {
   const esEdicion = !!tareaInicial;
@@ -20,9 +20,29 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
     return '09:00';
   };
 
+  // El backend regresa `horaRecordatorio` como "HH:MM:SS" (con
+  // segundos, típico de un TIME de Postgres), pero el <input type="time">
+  // y el Zod del backend solo aceptan "HH:MM". Sin este recorte, el
+  // input activaba el selector de segundos y al guardar mandaba un
+  // string con segundos que el backend rechazaba con "Datos inválidos".
+  const normalizarHora = (hora) => (hora ? hora.slice(0, 5) : '');
+
   const [titulo, setTitulo] = useState(tareaInicial?.titulo || '');
   const [esFija, setEsFija] = useState(tareaInicial?.tipo === 'fija');
   const [horaNativa, setHoraNativa] = useState(parsearHoraParaInput());
+
+  // Días de la semana solo aplican a tareas fijas. Si no se selecciona
+  // ninguno, no se manda `diasSemana` y el backend la aplica todos los
+  // días (comportamiento por default).
+  const [diasSemana, setDiasSemana] = useState(tareaInicial?.diasSemana || []);
+  const [horaRecordatorio, setHoraRecordatorio] = useState(normalizarHora(tareaInicial?.horaRecordatorio));
+  const [usaRecordatorio, setUsaRecordatorio] = useState(!!tareaInicial?.horaRecordatorio);
+
+  const toggleDia = (numero) => {
+    setDiasSemana((prev) =>
+      prev.includes(numero) ? prev.filter((d) => d !== numero) : [...prev, numero].sort((a, b) => a - b)
+    );
+  };
 
   const dificultadInicial = tareaInicial
     ? DIFICULTADES.find((d) => d.xpValor === tareaInicial.xpValor)?.key || 'facil'
@@ -46,11 +66,13 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
     setLoading(true);
     setError(null);
     try {
-      const xpValor = DIFICULTADES.find((d) => d.key === dificultad).xpValor;
+      const dificultadElegida = DIFICULTADES.find((d) => d.key === dificultad);
+      const xpValor = dificultadElegida.xpValor;
 
       const payload = {
         titulo: titulo.trim(),
         xpValor,
+        dificultad: dificultadElegida.backendKey,
         tipo: esFija ? 'fija' : 'normal',
       };
 
@@ -60,6 +82,13 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
       // no intenta calcularle un vencimiento que no existe.
       if (!esFija) {
         payload.descripcion = formatearHoraParaBackend(horaNativa);
+      } else {
+        // Solo se manda si el usuario eligió días específicos; si dejó
+        // todos sin marcar, se omite y el backend la aplica todos los días.
+        if (diasSemana.length > 0) payload.diasSemana = diasSemana;
+        // El recordatorio es opcional y solo dispara un push a esa hora,
+        // no afecta si la tarea cuenta como incumplida.
+        if (usaRecordatorio && horaRecordatorio) payload.horaRecordatorio = horaRecordatorio;
       }
 
       if (esEdicion) {
@@ -115,12 +144,11 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
               Tarea diaria (se repite cada día)
             </span>
             <span
-              className={`w-10 h-6 rounded-full relative transition-colors flex-shrink-0 ${esFija ? 'bg-cyan-500' : 'bg-white/10'}`}
+              className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${esFija ? 'bg-cyan-500' : 'bg-white/10'}`}
             >
               <span
-              className="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200"
-              style={{ transform: esFija ? 'translateX(20px)' : 'translateX(4px)' }}
-            />
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${esFija ? 'translate-x-5' : 'translate-x-0'}`}
+              />
             </span>
           </button>
 
@@ -136,6 +164,67 @@ export default function TareaFormModal({ onClose, onSave, tareaInicial, crearTar
                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-lg text-center text-white outline-none focus:border-violet-500/50 transition-colors color-scheme-dark"
                 style={{ colorScheme: 'dark' }}
               />
+            </div>
+          )}
+
+          {/* Días de la semana y recordatorio — solo aplican a tareas fijas */}
+          {esFija && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+                  ¿Qué días? <span className="normal-case font-normal text-slate-600">(vacío = todos los días)</span>
+                </p>
+                <div className="grid grid-cols-7 gap-1.5">
+                  {DIAS_SEMANA.map((dia) => (
+                    <button
+                      key={dia.numero}
+                      type="button"
+                      title={dia.label}
+                      onClick={() => toggleDia(dia.numero)}
+                      className={`h-9 rounded-lg text-[11px] font-bold border transition-colors ${
+                        diasSemana.includes(dia.numero)
+                          ? 'bg-cyan-500 border-cyan-400 text-white'
+                          : 'bg-black/20 border-white/10 text-slate-400 hover:border-white/20'
+                      }`}
+                    >
+                      {dia.letra}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setUsaRecordatorio((prev) => !prev)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
+                    usaRecordatorio ? 'bg-violet-500/10 border-violet-500/40' : 'bg-black/20 border-white/10'
+                  }`}
+                >
+                  <span className={`text-sm font-bold ${usaRecordatorio ? 'text-violet-300' : 'text-slate-400'}`}>
+                    Avisarme a una hora
+                  </span>
+                  <span
+                    className={`w-11 h-6 rounded-full relative transition-colors flex-shrink-0 ${usaRecordatorio ? 'bg-violet-500' : 'bg-white/10'}`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ${usaRecordatorio ? 'translate-x-5' : 'translate-x-0'}`}
+                    />
+                  </span>
+                </button>
+                {usaRecordatorio && (
+                  <input
+                    type="time"
+                    value={horaRecordatorio}
+                    onChange={(e) => setHoraRecordatorio(e.target.value)}
+                    className="w-full mt-2 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-lg text-center text-white outline-none focus:border-violet-500/50 transition-colors"
+                    style={{ colorScheme: 'dark' }}
+                  />
+                )}
+                <p className="text-[10px] text-slate-600 mt-1.5 px-1">
+                  Solo te manda un push a esa hora — no cuenta como incumplida si no la completas.
+                </p>
+              </div>
             </div>
           )}
 

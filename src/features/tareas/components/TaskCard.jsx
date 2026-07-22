@@ -1,10 +1,19 @@
 'use client';
-import { CheckCircle2, Clock, Pencil, Trash2, Camera, Repeat } from 'lucide-react';
+import { CheckCircle2, Clock, Pencil, Trash2, Camera, Repeat, Bell } from 'lucide-react';
+import { DIAS_SEMANA } from '../constants';
 
 export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
   const isVencida = tarea.estado === 'vencida' || tarea.estado === 'expired';
   const isCompletada = tarea.estado === 'completed';
   const esFija = tarea.tipo === 'fija';
+
+  const textoDias = (diasSemana) => {
+    if (!diasSemana || diasSemana.length === 0 || diasSemana.length === 7) return 'Se repite cada día';
+    const letras = diasSemana
+      .map((num) => DIAS_SEMANA.find((d) => d.numero === num)?.letra)
+      .filter(Boolean);
+    return `Se repite: ${letras.join(', ')}`;
+  };
 
   const formato12Horas = (timeStr) => {
     if (!timeStr) return '--:--';
@@ -18,23 +27,29 @@ export default function TaskCard({ tarea, onEdit, onDelete, onEvidencia }) {
 
   return (
     <div className={`bg-[#1f1638] border border-white/5 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-lg ${isVencida ? 'border-l-4 border-l-rose-500' : ''}`}>
-      <div className="flex flex-col gap-1 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
-          <h3 className={`text-base font-bold truncate ${isCompletada ? 'text-slate-500 line-through' : 'text-white'}`}>
-            {tarea.titulo}
-          </h3>
-          {esFija && (
-            <span className="flex-shrink-0 flex items-center gap-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+      <div className="flex flex-col gap-1.5 min-w-0">
+        <h3 className={`text-base font-bold truncate ${isCompletada ? 'text-slate-500 line-through' : 'text-white'}`}>
+          {tarea.titulo}
+        </h3>
+        {esFija && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="flex items-center gap-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
               <Repeat className="w-2.5 h-2.5" />
               Diaria
             </span>
-          )}
-        </div>
+            {tarea.horaRecordatorio && (
+              <span className="flex items-center gap-1 bg-violet-500/10 border border-violet-500/30 text-violet-300 text-[9px] font-black px-2 py-0.5 rounded-full">
+                <Bell className="w-2.5 h-2.5" />
+                {formato12Horas(tarea.horaRecordatorio)}
+              </span>
+            )}
+          </div>
+        )}
         <div className={`flex items-center gap-1.5 ${isVencida ? 'text-rose-400' : 'text-slate-400'}`}>
           {isCompletada ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
           <span className="text-[10px] font-bold uppercase tracking-wider">
             {esFija
-              ? `Se repite cada día · ${tarea.xpValor} XP ${isCompletada ? '• Completada hoy' : ''}`
+              ? `${textoDias(tarea.diasSemana)} · ${tarea.xpValor} XP ${isCompletada ? '• Completada hoy' : ''}`
               : `${tarea.descripcion ? `${formato12Horas(tarea.descripcion)} · ` : ''}${tarea.xpValor} XP ${isVencida ? '• Atrasada' : isCompletada ? '• Completada' : ''}`
             }
           </span>

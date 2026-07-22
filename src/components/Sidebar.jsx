@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  ClipboardList, Bot, Compass, Settings, LogOut, 
-  User, Rocket, Zap, Flame, Sparkles, Ghost, Cpu, Gamepad2, Skull, Coins
+  ClipboardList, Bot, Compass, Settings, LogOut, User, Coins
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSidebar } from '../context/SidebarContext';
 import useGamificacion from '../features/gamificacion/hooks/useGamificacion';
+import { AVATAR_MAP } from '../lib/avatarOptions';
 
 const NAV_SECTIONS = [
   {
@@ -24,25 +24,12 @@ const NAV_SECTIONS = [
   },
 ];
 
-const AVATAR_MAP = {
-  user: User,
-  bot: Bot,
-  rocket: Rocket,
-  zap: Zap,
-  flame: Flame,
-  sparkles: Sparkles,
-  ghost: Ghost,
-  cpu: Cpu,
-  gamepad: Gamepad2,
-  skull: Skull
-};
-
 function SidebarContent({ onNavigate }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
   
-  const [avatarKey, setAvatarKey] = useState('user');
+  const [avatarKey, setAvatarKey] = useState('ana');
 
   const { progreso } = useGamificacion();
   const { nivel, xpActual, xpDisponible } = progreso || {};
@@ -70,8 +57,8 @@ function SidebarContent({ onNavigate }) {
         
         {/* ENLACE DIRECTO A AJUSTES CON EL NUEVO AVATAR */}
         <Link href="/ajustes" onClick={onNavigate} className="flex items-center gap-3 p-2 -mx-2 rounded-2xl hover:bg-white/5 transition-colors group cursor-pointer">
-          <div className="w-11 h-11 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 shadow-inner">
-            <ActiveAvatarIcon className="w-5 h-5 text-violet-300" />
+          <div className="w-11 h-11 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0 shadow-inner overflow-hidden">
+            <ActiveAvatarIcon className="w-10 h-10" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-bold text-white truncate group-hover:text-violet-300 transition-colors">

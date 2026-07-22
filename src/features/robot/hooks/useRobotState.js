@@ -83,6 +83,21 @@ const parseTimeToToday = (timeStr) => {
   return now;
 };
 
+// Igual que parseTimeToToday, pero para `horaRecordatorio` de las tareas
+// fijas — que el backend manda en 24h ("HH:MM" o "HH:MM:SS", sin AM/PM),
+// nunca en el formato de 12h que usa `descripcion` en tareas normales.
+const parseHoraRecordatorioToToday = (horaStr) => {
+  if (!horaStr) return null;
+  const match = horaStr.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const h = parseInt(match[1], 10);
+  const m = parseInt(match[2], 10);
+
+  const now = new Date();
+  now.setHours(h, m, 0, 0);
+  return now;
+};
+
 export default function useRobotState(contexto = null, tareas = []) {
   const [emocionActual, setEmocionActual] = useState('idle');
   const [mensaje, setMensaje] = useState('');
@@ -219,7 +234,19 @@ export default function useRobotState(contexto = null, tareas = []) {
           continue;
         }
 
-        const horaTarea = parseTimeToToday(tarea.descripcion);
+        const esFija = tarea.tipo === 'fija';
+
+        // Una fija solo avisa los días que le tocan — si hoy no aplica
+        // (el backend ya nos lo dice con `aplicaHoy`), no hay nada que
+        // revisar para ella hoy.
+        if (esFija && tarea.aplicaHoy === false) continue;
+
+        // El recordatorio de una fija es en 24h ("HH:MM[:SS]"), sin
+        // AM/PM — necesita su propio parser. Las normales siguen usando
+        // `descripcion` como siempre.
+        const horaTarea = esFija
+          ? parseHoraRecordatorioToToday(tarea.horaRecordatorio)
+          : parseTimeToToday(tarea.descripcion);
         if (!horaTarea) continue;
 
         const diferenciaMs = horaTarea - ahora;
@@ -228,13 +255,16 @@ export default function useRobotState(contexto = null, tareas = []) {
         // --- ¿Ya se pasó la hora y nunca se completó? Triste, casi al
         // instante (máximo 60s de retraso, sin depender de que el
         // backend termine de marcarla como "vencida" — el frontend ya
-        // sabe la hora, no necesita esperar confirmación del servidor). ---
-        if (diferenciaMs < 0 && !fallidaDadaRef.current.has(tarea.id)) {
+        // sabe la hora, no necesita esperar confirmación del servidor).
+        // Esto NUNCA aplica a una fija: su `horaRecordatorio` es solo un
+        // aviso (push), Manuel confirmó que no cuenta como incumplida. ---
+        if (!esFija && diferenciaMs < 0 && !fallidaDadaRef.current.has(tarea.id)) {
           fallidaDadaRef.current.add(tarea.id);
           ultimoAvisoRef.current.delete(tarea.id);
           tareaFallida();
           continue;
         }
+        if (esFija && diferenciaMs < 0) continue;
 
         // --- ¿Faltan 10 minutos o menos? ---
         if (minutosFaltantes >= 0 && minutosFaltantes <= 10) {

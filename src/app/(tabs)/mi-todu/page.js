@@ -11,7 +11,7 @@ import MiniToduHelper from './components/MiniToduHelper';
 
 export default function MiToduPage() {
   const { open: openSidebar } = useSidebar();
-  const { progreso } = useGamificacion();
+const { progreso, refrescar: refrescarGamificacion } = useGamificacion();
   const [showHelp, setShowHelp] = useState(false);
   const [showTienda, setShowTienda] = useState(false);
 
@@ -27,11 +27,12 @@ export default function MiToduPage() {
   if (racha >= 3 && racha <= 6) rachaColor = 'text-emerald-400';
   if (racha >= 7) rachaColor = 'text-violet-400 drop-shadow-[0_0_8px_rgba(167,139,250,0.5)]';
 
-  // TODO backend: reemplazar por una función real que llame a
-  // POST /tienda/comprar y refresque useGamificacion() con el saldo
-  // real. Por ahora NO descuenta tus Coins reales todavía.
-  const handleComprar = (itemId, precio) => {
-    comprar(itemId, precio, xpDisponible, null);
+  // Llama al backend real (POST /tienda/comprar dentro de useDecoraciones)
+  // y refresca useGamificacion() con el saldo real que regresa el
+  // servidor — mismo patrón que ya usa useDadosGame.js con Farkle.
+  const handleComprar = async (itemId, precio) => {
+    const data = await comprar(itemId, precio);
+    if (data) refrescarGamificacion();
   };
 
   return (
